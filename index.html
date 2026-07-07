@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simsi Solutions</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@200;300;400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🇨🇭</text></svg>">
+</head>
+<body>
+  <div class="app">
+    <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar">
+      <svg class="icon-collapse" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15,18 9,12 15,6"/></svg>
+      <svg class="icon-expand" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9,18 15,12 9,6"/></svg>
+    </button>
+    <nav class="sidebar">
+      <div class="sidebar-brand">
+        <svg class="brand-icon" width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+          <rect x="4" y="3.5" width="16" height="3" rx="1"/>
+          <rect x="4" y="6.5" width="3" height="4.5" rx="1"/>
+          <rect x="4" y="11" width="16" height="3" rx="1"/>
+          <rect x="17" y="14" width="3" height="4.5" rx="1"/>
+          <rect x="4" y="18.5" width="16" height="2.5" rx="1"/>
+        </svg>
+        <span class="brand-name">Simsi Solutions</span>
+      </div>
+
+      <ul class="nav-list">
+        <li>
+          <a href="#" class="nav-link active" data-section="home">
+            <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
+            Home
+          </a>
+        </li>
+        <li>
+          <a href="#" class="nav-link" data-section="schedule">
+            <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+            Schedule
+          </a>
+        </li>
+        <li>
+          <a href="#" class="nav-link" data-section="habits">
+            <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+            Habits
+          </a>
+        </li>
+        <li>
+          <a href="#" class="nav-link" data-section="goals">
+            <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+            Goals
+          </a>
+        </li>
+      </ul>
+
+      <div class="sidebar-bottom">
+        <div class="reminders-section">
+          <div class="reminders-header">Reminders</div>
+          <div id="remindersList" class="reminders-list"></div>
+        </div>
+        <div class="no-slop">No Slop</div>
+      </div>
+    </nav>
+
+    <main class="main">
+      <!-- Home -->
+      <section id="home" class="section active">
+        <div class="home-container">
+          <img class="home-bg-img" src="" alt="">
+          <div class="home-overlay"></div>
+          <div class="home-hero-text">
+            <div class="home-greeting-line1" id="homeGreetingLine1"></div>
+            <div class="home-greeting-line2" id="homeGreetingLine2"></div>
+          </div>
+          <div class="home-bottom-left">
+            <div class="home-clock" id="homeClock"></div>
+            <div class="home-upnext" id="homeUpNext"></div>
+            <div class="home-date-line" id="homeDateEl"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Schedule -->
+      <section id="schedule" class="section">
+        <div class="schedule-layout">
+          <div class="calendar-wrapper">
+
+            <!-- Floating library panel (top-left) -->
+            <div class="floating-panel floating-panel--library hidden" id="libraryPanel">
+              <div id="activityList" class="activity-list"></div>
+            </div>
+
+            <!-- Floating day range panel (top-right) -->
+            <div class="floating-panel floating-panel--range hidden" id="dayRangePanel">
+              <div class="range-panel-title">Visible Hours</div>
+              <div class="range-panel-row">
+                <span class="range-label">Start</span>
+                <select id="rangeStart" class="range-select"></select>
+              </div>
+              <div class="range-panel-row">
+                <span class="range-label">End</span>
+                <select id="rangeEnd" class="range-select"></select>
+              </div>
+              <button id="applyRange" class="range-apply">Apply</button>
+              <button id="resetRange" class="range-reset">Reset to default</button>
+            </div>
+
+            <!-- Floating year calendar panel (top-right) -->
+            <div class="floating-panel floating-panel--year hidden" id="yearPanel">
+              <div class="year-panel-nav">
+                <button class="year-nav-btn" id="viewYearPrev">
+                  <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+                </button>
+                <span class="year-nav-label" id="viewYearLabel">2026</span>
+                <button class="year-nav-btn" id="viewYearNext">
+                  <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+                </button>
+              </div>
+              <div class="year-cal" id="yearCal"></div>
+            </div>
+
+            <!-- Calendar header: left (view toggle) | center (day nav) | right (controls) -->
+            <div class="cal-header">
+              <div class="cal-header-left">
+                <div class="view-mode-seg" id="viewModeSeg">
+                  <button class="view-mode-btn view-mode-btn--active" data-mode="day">Day</button>
+                  <button class="view-mode-btn" data-mode="week">Week</button>
+                </div>
+              </div>
+
+              <div class="day-nav">
+                <button class="day-nav-btn" id="prevDay">
+                  <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+                </button>
+                <span class="day-nav-title" id="dayNavTitle"></span>
+                <button class="day-nav-btn" id="nextDay">
+                  <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+                </button>
+              </div>
+
+              <div class="cal-header-right">
+                <button class="panel-toggle-btn" id="toggleLibrary" aria-label="Activity library">
+                  <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+                </button>
+                <button class="panel-toggle-btn" id="toggleYear" aria-label="Year calendar">
+                  <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                </button>
+                <button class="panel-toggle-btn" id="toggleDayRange" aria-label="Visible time range">
+                  <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+                </button>
+                <button class="zoom-btn" id="zoomOut" aria-label="Zoom out">−</button>
+                <span class="zoom-label" id="zoomLabel">60 min</span>
+                <button class="zoom-btn" id="zoomIn" aria-label="Zoom in">+</button>
+              </div>
+            </div>
+
+            <div class="cal-tags-top" id="calTagsTop"></div>
+            <div class="cal-body" id="calBody"></div>
+            <div class="cal-tags-bottom" id="calTagsBottom"></div>
+            <div id="weekBody" class="week-body" style="display:none"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Habits -->
+      <section id="habits" class="section">
+        <div class="habits-container">
+          <div class="habits-header">
+            <h2 class="habits-title">Habits</h2>
+            <span class="habits-week-score" id="habitsWeekScore">This Week: 0%</span>
+          </div>
+          <div class="habits-grid" id="habitsGrid"></div>
+          <button class="habits-add-btn" id="habitsAddBtn">+ Add Habit</button>
+          <div class="habits-add-input-wrap" id="habitsAddInputWrap" style="display:none">
+            <input type="text" class="habits-add-input" id="habitsAddInput" placeholder="Habit name…" autocomplete="off">
+          </div>
+        </div>
+      </section>
+
+      <!-- Goals -->
+      <section id="goals" class="section">
+        <div class="goals-container">
+          <div class="goals-header">
+            <h2 class="goals-title">Goals</h2>
+          </div>
+          <div class="goals-grid" id="goalsGrid"></div>
+          <button class="goals-add-btn" id="goalsAddBtn">+ Add Goal</button>
+        </div>
+      </section>
+
+      <section id="bookLibrary" class="section">
+        <div class="book-page-container">
+          <button class="book-back-btn" id="bookLibraryBack">← Goals</button>
+          <h2 class="book-page-title">Read 3 Books</h2>
+          <div class="book-library-grid" id="bookLibraryGrid"></div>
+        </div>
+      </section>
+
+      <section id="bookDetail" class="section">
+        <div class="book-detail-container">
+          <button class="book-back-btn" id="bookDetailBack">← Library</button>
+          <div class="book-detail-layout">
+            <div class="book-detail-left">
+              <div class="book-detail-cover-wrap" id="bookDetailCoverWrap"></div>
+            </div>
+            <div class="book-detail-right">
+              <div class="book-detail-meta" id="bookDetailMeta"></div>
+              <div class="book-detail-title" id="bookDetailTitle"></div>
+              <div class="book-detail-author" id="bookDetailAuthor"></div>
+  <div class="book-detail-progress-section">
+    <div class="book-detail-progress-label" id="bookDetailProgressLabel"></div>
+    <div class="book-detail-bar-wrap">
+      <div class="book-detail-bar-fill" id="bookDetailBarFill"></div>
+    </div>
+    <div class="book-detail-page-input-row">
+      <input class="book-detail-page-input" id="bookDetailPageInput" type="number" min="0" placeholder="Current page">
+      <span class="book-detail-page-of" id="bookDetailPageOf"></span>
+    </div>
+    <div class="book-detail-page-hint">Press Enter to save</div>
+  </div>
+            </div>
+          </div>
+          <div class="book-detail-journal-section">
+            <div class="book-detail-journal-label">JOURNAL</div>
+            <div id="bookDetailNewEntryForm" class="book-journal-new-form hidden">
+              <input class="book-journal-entry-title-input" id="bookJournalNewTitle" type="text" placeholder="Entry title…" autocomplete="off">
+              <textarea class="book-journal-entry-body-input" id="bookJournalNewBody" placeholder="Write your thoughts…" rows="5"></textarea>
+              <div class="book-journal-form-actions">
+                <button class="book-journal-cancel-btn" id="bookJournalCancelBtn">Cancel</button>
+                <button class="book-journal-save-btn" id="bookJournalSaveBtn">Save Entry</button>
+              </div>
+            </div>
+            <div id="bookDetailJournalList" class="book-journal-list"></div>
+            <button class="book-journal-new-btn" id="bookJournalNewBtn">+ New Entry</button>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Detail popup modal -->
+  <div id="modal" class="modal-overlay hidden">
+    <div class="modal-box">
+      <div class="modal-hd">
+        <span id="modalTitle" class="modal-title"></span>
+        <button id="modalClose" class="modal-x">×</button>
+      </div>
+      <div id="modalBody" class="modal-body"></div>
+      <div class="modal-ft">
+        <button id="modalCancel" class="modal-btn btn-ghost">Cancel</button>
+        <button id="modalConfirm" class="modal-btn btn-accent">Add</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Shopping list viewer -->
+  <div id="listModal" class="modal-overlay hidden">
+    <div class="modal-box modal-box--sm">
+      <div class="modal-hd">
+        <span class="modal-title">Shopping List</span>
+        <button id="listModalClose" class="modal-x">×</button>
+      </div>
+      <div id="listModalBody" class="modal-body"></div>
+      <div class="modal-ft">
+        <button id="listModalOk" class="modal-btn btn-accent">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Habit detail modal -->
+  <div id="habitModal" class="modal-overlay hidden">
+    <div class="modal-box habit-modal-box">
+      <div class="modal-hd">
+        <span id="habitModalTitle" class="modal-title"></span>
+        <button id="habitModalClose" class="modal-x">×</button>
+      </div>
+      <div id="habitModalBody" class="habit-modal-body"></div>
+    </div>
+  </div>
+
+  <!-- Settings gear button -->
+  <button class="settings-gear-btn" id="settingsGearBtn" aria-label="Settings">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="3"/>
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+    </svg>
+  </button>
+
+  <!-- Settings modal -->
+  <div class="settings-overlay hidden" id="settingsOverlay">
+    <div class="settings-modal" id="settingsModal">
+      <div class="settings-hd">
+        <span class="settings-title">Settings</span>
+        <button class="settings-close" id="settingsClose">×</button>
+      </div>
+      <div class="settings-body">
+        <div class="settings-section">
+          <div class="settings-section-header">Profile</div>
+          <div class="settings-row">
+            <label class="settings-row-label">Workspace Name</label>
+            <input type="text" class="settings-row-input" id="settingWorkspaceName" autocomplete="off">
+          </div>
+          <div class="settings-row">
+            <label class="settings-row-label">Your Name</label>
+            <input type="text" class="settings-row-input" id="settingYourName" placeholder="Your name" autocomplete="off">
+          </div>
+        </div>
+        <div class="settings-section">
+          <div class="settings-section-header">Schedule</div>
+          <div class="settings-row">
+            <label class="settings-row-label">Rise &amp; Shine</label>
+            <input type="time" class="settings-time-input" id="settingRiseTime">
+          </div>
+          <div class="settings-row">
+            <label class="settings-row-label">Lights Out</label>
+            <input type="time" class="settings-time-input" id="settingLightsOut">
+          </div>
+          <div class="settings-row">
+            <label class="settings-row-label">Default Block Duration</label>
+            <div class="settings-seg" id="settingBlockDuration">
+              <button class="settings-seg-btn" data-val="15">15m</button>
+              <button class="settings-seg-btn" data-val="30">30m</button>
+              <button class="settings-seg-btn" data-val="45">45m</button>
+              <button class="settings-seg-btn" data-val="60">60m</button>
+              <button class="settings-seg-btn" data-val="90">90m</button>
+            </div>
+          </div>
+          <div class="settings-row">
+            <label class="settings-row-label">Time Format</label>
+            <div class="settings-seg" id="settingTimeFormat">
+              <button class="settings-seg-btn" data-val="12hr">12hr</button>
+              <button class="settings-seg-btn" data-val="24hr">24hr</button>
+            </div>
+          </div>
+          <div class="settings-row">
+            <label class="settings-row-label">Day Starts At</label>
+            <select class="settings-row-select" id="settingCalStartHour"></select>
+          </div>
+          <div class="settings-row">
+            <label class="settings-row-label">Week Starts On</label>
+            <div class="settings-seg" id="settingWeekStart">
+              <button class="settings-seg-btn" data-val="Sunday">Sun</button>
+              <button class="settings-seg-btn" data-val="Monday">Mon</button>
+            </div>
+          </div>
+        </div>
+        <div class="settings-section" id="settingsHabitsSection">
+          <div class="settings-section-header">Habits</div>
+          <div class="settings-row">
+            <label class="settings-row-label">Milestone Rewards</label>
+            <label class="settings-toggle">
+              <input type="checkbox" id="settingMilestoneRewards">
+              <span class="settings-toggle-track"></span>
+            </label>
+          </div>
+          <div class="settings-row">
+            <label class="settings-row-label">Show Best Streak</label>
+            <label class="settings-toggle">
+              <input type="checkbox" id="settingShowBestStreak">
+              <span class="settings-toggle-track"></span>
+            </label>
+          </div>
+          <div class="settings-subsection-header">Weekdays Only</div>
+          <div id="settingsWeekdaysOnlyList"></div>
+        </div>
+        <div class="settings-section" id="settingsAppearanceSection">
+          <div class="settings-section-header">Appearance</div>
+          <div class="settings-row">
+            <label class="settings-row-label">Accent Color</label>
+            <div class="settings-color-swatches" id="settingAccentColor">
+              <button class="settings-swatch" data-color="#9B72CF" style="background:#9B72CF" title="Purple"></button>
+              <button class="settings-swatch" data-color="#5B8DEF" style="background:#5B8DEF" title="Blue"></button>
+              <button class="settings-swatch" data-color="#4CAF7D" style="background:#4CAF7D" title="Green"></button>
+              <button class="settings-swatch" data-color="#F47C35" style="background:#F47C35" title="Orange"></button>
+              <button class="settings-swatch" data-color="#E8649A" style="background:#E8649A" title="Pink"></button>
+              <button class="settings-swatch" data-color="#E05C5C" style="background:#E05C5C" title="Red"></button>
+            </div>
+          </div>
+          <div class="settings-row">
+            <label class="settings-row-label">Font Size</label>
+            <div class="settings-seg" id="settingFontSize">
+              <button class="settings-seg-btn" data-val="Compact">Compact</button>
+              <button class="settings-seg-btn" data-val="Default">Default</button>
+              <button class="settings-seg-btn" data-val="Comfortable">Comfortable</button>
+            </div>
+          </div>
+          <div class="settings-row">
+            <label class="settings-row-label">Block Labels</label>
+            <div class="settings-seg" id="settingBlockLabelStyle">
+              <button class="settings-seg-btn" data-val="Name Only">Name Only</button>
+              <button class="settings-seg-btn" data-val="Name + Time">Name + Time</button>
+            </div>
+          </div>
+          <div class="settings-row">
+            <label class="settings-row-label">Show No Slop</label>
+            <label class="settings-toggle">
+              <input type="checkbox" id="settingShowNoSlop">
+              <span class="settings-toggle-track"></span>
+            </label>
+          </div>
+          <div class="settings-row">
+            <label class="settings-row-label">Time of Day Tinting</label>
+            <label class="settings-toggle">
+              <input type="checkbox" id="settingTimeOfDayTinting">
+              <span class="settings-toggle-track"></span>
+            </label>
+          </div>
+        </div>
+        <div class="settings-section" id="settingsDataSection">
+          <div class="settings-divider"></div>
+          <div class="settings-section-header">Data</div>
+          <div class="settings-row">
+            <label class="settings-row-label">Export Data</label>
+            <button class="settings-pill-btn" id="dataExportBtn">Export JSON</button>
+          </div>
+          <div class="settings-row">
+            <label class="settings-row-label">Clear Today</label>
+            <button class="settings-pill-btn" id="dataClearTodayBtn">Clear</button>
+          </div>
+          <div class="settings-row">
+            <label class="settings-row-label">Reset Habits</label>
+            <button class="settings-pill-btn" id="dataResetHabitsBtn">Reset</button>
+          </div>
+          <div class="settings-row">
+            <label class="settings-row-label">Reset Everything</label>
+            <button class="settings-pill-btn settings-pill-btn--danger" id="dataResetAllBtn">Reset All</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="newGoalModal" class="modal-overlay hidden">
+    <div class="modal-box new-goal-modal-box">
+      <div class="modal-hd">
+        <span class="modal-title">New Goal</span>
+        <button id="newGoalModalClose" class="modal-x">×</button>
+      </div>
+      <div id="newGoalModalBody" class="modal-body"></div>
+      <div class="modal-ft">
+        <button id="newGoalModalCancel" class="modal-btn btn-ghost">Cancel</button>
+        <button id="newGoalModalConfirm" class="modal-btn btn-accent">Create Goal</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="editGoalModal" class="modal-overlay hidden">
+    <div class="modal-box new-goal-modal-box">
+      <div class="modal-hd">
+        <span class="modal-title">Edit Goal</span>
+        <button id="editGoalModalClose" class="modal-x">×</button>
+      </div>
+      <div id="editGoalModalBody" class="modal-body"></div>
+      <div class="modal-ft">
+        <button id="editGoalModalCancel" class="modal-btn btn-ghost">Cancel</button>
+        <button id="editGoalModalConfirm" class="modal-btn btn-accent">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Goal detail modal -->
+  <div id="goalModal" class="modal-overlay hidden">
+    <div class="modal-box goal-modal-box">
+      <div class="modal-hd">
+        <div class="goal-modal-hd-text">
+          <div id="goalModalMeta" class="goal-modal-meta"></div>
+          <span id="goalModalTitle" class="modal-title"></span>
+        </div>
+        <button id="goalModalClose" class="modal-x">×</button>
+      </div>
+      <div id="goalModalBody" class="goal-modal-body"></div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
