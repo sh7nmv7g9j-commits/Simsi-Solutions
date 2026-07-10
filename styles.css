@@ -4256,3 +4256,148 @@ body.is-wk-incol-dragging * { cursor: grabbing !important; }
   border-color: rgba(155,114,207,0.4);
   color: #d0d0d0;
 }
+
+/* ── Auth gate (login screen) ───────────────────────────────────────────────── */
+/* Until Firebase resolves the auth state (body.auth-ready), BOTH the app and the
+   gate stay hidden so nothing flashes on reload. Then exactly one is revealed:
+   the app when signed in (body.authed), otherwise the login gate. */
+.app { display: none; }
+.auth-gate { display: none; }
+body.authed .app { display: flex; }
+body.auth-ready:not(.authed) .auth-gate { display: flex; }
+
+.auth-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background:
+    radial-gradient(circle at 30% 20%, rgba(108,99,255,0.10), transparent 60%),
+    var(--bg);
+  overflow: auto;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 360px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 32px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.5);
+}
+
+.auth-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--accent);
+  justify-content: center;
+}
+.auth-brand-name {
+  font-size: 15px;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  color: var(--text-primary);
+}
+
+.auth-title {
+  margin: 4px 0 8px;
+  text-align: center;
+  font-size: 20px;
+  font-weight: 300;
+  color: var(--text-primary);
+}
+
+.auth-google-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 11px 14px;
+  background: #fff;
+  color: #1f1f1f;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+.auth-google-btn:hover { opacity: 0.9; }
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.auth-input {
+  width: 100%;
+  padding: 11px 13px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text-primary);
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+.auth-input:focus { border-color: var(--accent); }
+.auth-input::placeholder { color: var(--text-secondary); }
+
+.auth-submit-btn {
+  width: 100%;
+  padding: 11px 14px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+.auth-submit-btn:hover { opacity: 0.9; }
+
+.auth-error {
+  min-height: 16px;
+  text-align: center;
+  font-size: 12.5px;
+  color: #ef6b6b;
+}
+
+.auth-toggle {
+  text-align: center;
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  text-decoration: none;
+}
+.auth-toggle:hover { color: var(--text-primary); }
+
+.settings-account-email {
+  font-size: 13px;
+  color: var(--text-primary);
+  opacity: 0.8;
+  word-break: break-all;
+}

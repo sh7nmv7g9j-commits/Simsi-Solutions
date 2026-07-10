@@ -9,6 +9,43 @@
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🇨🇭</text></svg>">
 </head>
 <body>
+  <div class="auth-gate" id="authGate">
+    <div class="auth-card">
+      <div class="auth-brand">
+        <svg class="brand-icon" width="26" height="26" viewBox="0 0 24 24" fill="currentColor">
+          <rect x="4" y="3.5" width="16" height="3" rx="1"/>
+          <rect x="4" y="6.5" width="3" height="4.5" rx="1"/>
+          <rect x="4" y="11" width="16" height="3" rx="1"/>
+          <rect x="17" y="14" width="3" height="4.5" rx="1"/>
+          <rect x="4" y="18.5" width="16" height="2.5" rx="1"/>
+        </svg>
+        <span class="auth-brand-name">Simsi Solutions</span>
+      </div>
+      <h1 class="auth-title" id="authTitle">Sign in</h1>
+
+      <button type="button" class="auth-google-btn" id="authGoogleBtn">
+        <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
+          <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.7-6.1 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34 4.5 29.3 2.5 24 2.5 12.1 2.5 2.5 12.1 2.5 24S12.1 45.5 24 45.5 45.5 35.9 45.5 24c0-1.2-.1-2.4-.4-3.5z"/>
+          <path fill="#FF3D00" d="M5.3 14.7l6.6 4.8C13.6 15.1 18.4 12 24 12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34 4.5 29.3 2.5 24 2.5 16 2.5 9.1 7 5.3 14.7z"/>
+          <path fill="#4CAF50" d="M24 45.5c5.2 0 9.9-2 13.5-5.2l-6.2-5.3c-2 1.5-4.6 2.5-7.3 2.5-5.2 0-9.6-3.3-11.2-7.9l-6.5 5C9 41 15.9 45.5 24 45.5z"/>
+          <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4 5.5l6.2 5.3C41 35.6 45.5 30.5 45.5 24c0-1.2-.1-2.4-.4-3.5z"/>
+        </svg>
+        Continue with Google
+      </button>
+
+      <div class="auth-divider"><span>or</span></div>
+
+      <form class="auth-form" id="authForm">
+        <input type="email" class="auth-input" id="authEmail" placeholder="Email" autocomplete="email" required>
+        <input type="password" class="auth-input" id="authPassword" placeholder="Password" autocomplete="current-password" required>
+        <button type="submit" class="auth-submit-btn" id="authSubmitBtn">Sign in</button>
+      </form>
+
+      <div class="auth-error" id="authError"></div>
+      <a href="#" class="auth-toggle" id="authToggle">Don't have an account? Create one</a>
+    </div>
+  </div>
+
   <div class="app">
     <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar">
       <svg class="icon-collapse" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15,18 9,12 15,6"/></svg>
@@ -406,12 +443,26 @@
             </label>
           </div>
         </div>
+        <div class="settings-section" id="settingsAccountSection">
+          <div class="settings-divider"></div>
+          <div class="settings-section-header">Account</div>
+          <div class="settings-row">
+            <label class="settings-row-label">Signed in as</label>
+            <span class="settings-account-email" id="accountEmail"></span>
+          </div>
+          <div class="settings-row">
+            <label class="settings-row-label">Session</label>
+            <button class="settings-pill-btn settings-pill-btn--danger" id="signOutBtn">Sign out</button>
+          </div>
+        </div>
         <div class="settings-section" id="settingsDataSection">
           <div class="settings-divider"></div>
           <div class="settings-section-header">Data</div>
           <div class="settings-row">
             <label class="settings-row-label">Export Data</label>
             <button class="settings-pill-btn" id="dataExportBtn">Export JSON</button>
+            <button class="settings-pill-btn" id="dataImportBtn">Import Backup</button>
+            <input type="file" id="dataImportInput" accept=".json,application/json" hidden>
           </div>
           <div class="settings-row">
             <label class="settings-row-label">Clear Today</label>
@@ -472,6 +523,8 @@
     </div>
   </div>
 
+  <script src="firebase-config.js"></script>
   <script src="app.js"></script>
+  <script type="module" src="auth.js"></script>
 </body>
 </html>

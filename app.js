@@ -6399,6 +6399,42 @@ function initDataSettings() {
     URL.revokeObjectURL(url);
   });
 
+  // Row 1b — Import Backup
+  const importBtn   = document.getElementById('dataImportBtn');
+  const importInput = document.getElementById('dataImportInput');
+  if (importBtn && importInput) {
+    importBtn.addEventListener('click', () => importInput.click());
+    importInput.addEventListener('change', () => {
+      const file = importInput.files && importInput.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = async () => {
+        try {
+          const parsed = JSON.parse(reader.result);
+          // Accept both the Export JSON format ({ exportedAt, data: {...} })
+          // and a flat { key: value } backup.
+          const entries = (parsed && typeof parsed.data === 'object' && parsed.data)
+            ? parsed.data
+            : parsed;
+          Object.keys(entries).forEach(key => {
+            const value = entries[key];
+            localStorage.setItem(key, typeof value === 'string' ? value : JSON.stringify(value));
+          });
+          // Push imported data to the cloud before reloading; otherwise the
+          // reload's hydrate would overwrite it with the old cloud copy.
+          // No-ops when signed out.
+          if (typeof window.__syncPushNow === 'function') {
+            try { await window.__syncPushNow(); } catch (e) {}
+          }
+          location.reload();
+        } catch (e) {
+          alert('Could not import that file — it is not valid backup JSON.');
+        }
+      };
+      reader.readAsText(file);
+    });
+  }
+
   // Row 2 — Clear Today's Blocks
   clearTodayBtn.addEventListener('click', () => {
     _showDataConfirm(clearTodayBtn, "Clear today's blocks?", 'Yes', 'No', () => {
@@ -6599,7 +6635,7 @@ document.addEventListener('visibilitychange', () => {
   }
 });
 
-document.addEventListener('DOMContentLoaded', () => {
+function bootApp() {
   initBackgroundImage();
   initSidebarToggle();
   loadSettings();
@@ -6666,7 +6702,9 @@ document.addEventListener('DOMContentLoaded', () => {
   initSettings();
   initDataSettings();
   renderHomePage();
-});
+}
+// The app is booted by auth.js (window.bootApp) after cloud data is hydrated.
+window.bootApp = bootApp;
 
 function loadBlocks() {
   loadBlocksForDay(dateKey(currentDate));
@@ -6791,6 +6829,16 @@ function buildWeekBody() {
     const col = document.createElement('div');
     col.className = 'week-col';
     col.id = `wkCol${i}`;
+
+    const ind = document.createElement('div');
+    ind.className = 'drop-indicator';
+    col.appendChild(ind);
+
+    // Library-chip → week-column drag-and-drop (attached once; persists across renders)
+    col.addEventListener('dragover',  onWeekColDragOver);
+    col.addEventListener('dragleave', onWeekColDragLeave);
+    col.addEventListener('drop',      onWeekColDrop);
+
     colsWrap.appendChild(col);
   }
   scroll.appendChild(colsWrap);
@@ -6966,6 +7014,97 @@ function _createWeekBlock(data, col) {
   block.addEventListener('contextmenu', e => _showWeekBlockCtxMenu(e, block));
   block.addEventListener('mousedown', _onWkBlockMouseDown);
   col.appendChild(block);
+}
+
+// ── Library-chip → week-column drag-and-drop ──────────────────────────────────
+
+// renderWeekView() clears each column's innerHTML on every render, which removes
+// the .drop-indicator added in buildWeekBody(). Get-or-create it so the handlers
+// work regardless of how many times the column has been re-rendered.
+function _weekColIndicator(col) {
+  let ind = col.querySelector('.drop-indicator');
+  if (!ind) {
+    ind = document.createElement('div');
+    ind.className = 'drop-indicator';
+    col.appendChild(ind);
+  }
+  return ind;
+}
+
+function onWeekColDragOver(e) {
+  if (!activeDrag) return;
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'copy';
+
+  const col  = e.currentTarget;
+  const hour = _wkYToHour(col, e.clientY);
+  const top  = (hour - WEEK_DISPLAY_START_H) * HOUR_H;
+
+  const ind = _weekColIndicator(col);
+  ind.className     = `drop-indicator ind-${activeDrag.cat}`;
+  ind.style.top     = `${top}px`;
+  ind.style.display = 'block';
+  col.classList.add('drag-active');
+}
+
+function onWeekColDragLeave(e) {
+  const col = e.currentTarget;
+  if (col.contains(e.relatedTarget)) return;
+  col.classList.remove('drag-active');
+  const ind = col.querySelector('.drop-indicator');
+  if (ind) ind.style.display = 'none';
+}
+
+function onWeekColDrop(e) {
+  e.preventDefault();
+  const col = e.currentTarget;
+  col.classList.remove('drag-active');
+  const ind = col.querySelector('.drop-indicator');
+  if (ind) ind.style.display = 'none';
+
+  const act = activeDrag;
+  activeDrag = null;
+  isDraggingFromLibrary = false;
+  if (!act) return;
+
+  const day  = col.dataset.day;
+  const hour = _wkYToHour(col, e.clientY);
+
+  if (act.popup) {
+    pendingDrop = { day, hour };
+    pendingAct  = act;
+    openModal(act);
+  } else {
+    const newBlockData = {
+      id:        uid(),
+      day:       col.dataset.day,
+      startHour: hour,
+      duration:  appSettings.defaultBlockDuration / 60,
+      label:     act.name,
+      cat:       act.cat,
+      actId:     act.id,
+      items:     null,
+    };
+
+    // Persist manually — saveBlocks() rebuilds from the day view's DOM, which is
+    // not what's on screen in week view, so it would clobber the new block.
+    try {
+      const raw = localStorage.getItem(BLOCKS_KEY);
+      const all = raw ? JSON.parse(raw) : [];
+      all.push(newBlockData);
+      localStorage.setItem(BLOCKS_KEY, JSON.stringify(all));
+    } catch (err) {}
+
+    // Render just this one block — _loadWeekBlocksForCol would duplicate the
+    // blocks already present in the column.
+    _createWeekBlock(newBlockData, col);
+  }
+
+  document.querySelectorAll('.week-col.drag-active').forEach(c => {
+    c.classList.remove('drag-active');
+    const i = c.querySelector('.drop-indicator');
+    if (i) i.style.display = 'none';
+  });
 }
 
 // ── Week cross-column drag-to-copy ────────────────────────────────────────────
