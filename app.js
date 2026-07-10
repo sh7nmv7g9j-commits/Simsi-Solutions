@@ -623,6 +623,16 @@ function makeLibChip(act) {
       activeDrag = null;
       isDraggingFromLibrary = false;
     });
+
+    // Touch/pen: HTML5 DnD never fires, so long-press lifts a ghost we drag manually.
+    chip.addEventListener('pointerdown', e => {
+      if (e.pointerType === 'mouse') return;
+      if (chip.querySelector('.chip-confirm')) return;
+      if (e.target.closest('.chip-del') ||
+          e.target.closest('.chip-cat-pill') ||
+          e.target.closest('.chip-drag-handle')) return;
+      armTouchLongPress(e, (sx, sy) => beginChipTouchDrag(act, chip, sx, sy));
+    });
   }
 
   renderChipNormal(chip, act);
@@ -1320,6 +1330,126 @@ function onColDrop(e) {
   }
 }
 
+// ── Library chip → calendar: touch drag ─────────────────────────────────────────
+// HTML5 drag-and-drop (used by mouse) never fires on touch, so touch/pen gets a
+// parallel pointer-driven drag: long-press a chip to lift a ghost, drag it over a
+// day or week column, release to drop. Reuses the same block-creation paths.
+let activeChipTouchDrag = null;
+
+function beginChipTouchDrag(act, chip, sx, sy) {
+  const rect  = chip.getBoundingClientRect();
+  const ghost = chip.cloneNode(true);
+  ghost.style.position      = 'fixed';
+  ghost.style.left          = `${rect.left}px`;
+  ghost.style.top           = `${rect.top}px`;
+  ghost.style.width         = `${rect.width}px`;
+  ghost.style.margin        = '0';
+  ghost.style.pointerEvents = 'none';
+  ghost.style.opacity       = '0.85';
+  ghost.style.zIndex        = '9999';
+  document.body.appendChild(ghost);
+
+  chip.style.touchAction = 'none';
+  activeChipTouchDrag = { act, chip, ghost, offsetX: sx - rect.left, offsetY: sy - rect.top, hoverCol: null };
+  activeDrag = act;
+  isDraggingFromLibrary = true;
+  document.body.classList.add('is-block-dragging');
+
+  document.addEventListener('pointermove',   _chipTouchMove, true);
+  document.addEventListener('pointerup',     _chipTouchEnd,  true);
+  document.addEventListener('pointercancel', _chipTouchEnd,  true);
+}
+
+function _chipTouchClearHover() {
+  const d = activeChipTouchDrag;
+  if (d?.hoverCol) {
+    d.hoverCol.classList.remove('drag-active');
+    const ind = d.hoverCol.querySelector('.drop-indicator');
+    if (ind) ind.style.display = 'none';
+    d.hoverCol = null;
+  }
+}
+
+function _chipTouchColAt(clientX, clientY) {
+  const d = activeChipTouchDrag;
+  d.ghost.style.display = 'none';
+  const under = document.elementFromPoint(clientX, clientY);
+  d.ghost.style.display = '';
+  return under?.closest('.day-col') || under?.closest('.week-col') || null;
+}
+
+function _chipTouchMove(e) {
+  const d = activeChipTouchDrag;
+  if (!d) return;
+  e.preventDefault();
+
+  d.ghost.style.left = `${e.clientX - d.offsetX}px`;
+  d.ghost.style.top  = `${e.clientY - d.offsetY}px`;
+
+  const col = _chipTouchColAt(e.clientX, e.clientY);
+  if (col !== d.hoverCol) _chipTouchClearHover();
+  if (!col) return;
+  d.hoverCol = col;
+
+  const isWeek = col.classList.contains('week-col');
+  const baseH  = isWeek ? WEEK_DISPLAY_START_H : START_H;
+  const hour   = isWeek ? _wkYToHour(col, e.clientY) : yToHour(col, e.clientY);
+  const ind    = isWeek ? _weekColIndicator(col) : col.querySelector('.drop-indicator');
+  if (ind) {
+    ind.className     = `drop-indicator ind-${d.act.cat}`;
+    ind.style.top     = `${(hour - baseH) * HOUR_H}px`;
+    ind.style.display = 'block';
+  }
+  col.classList.add('drag-active');
+}
+
+function _chipTouchEnd(e) {
+  const d = activeChipTouchDrag;
+  if (!d) return;
+
+  document.removeEventListener('pointermove',   _chipTouchMove, true);
+  document.removeEventListener('pointerup',     _chipTouchEnd,  true);
+  document.removeEventListener('pointercancel', _chipTouchEnd,  true);
+
+  const col = e.type === 'pointercancel' ? null : _chipTouchColAt(e.clientX, e.clientY);
+
+  _chipTouchClearHover();
+  d.ghost.remove();
+  d.chip.style.touchAction = '';
+  document.body.classList.remove('is-block-dragging');
+  const act = d.act;
+  activeChipTouchDrag = null;
+  activeDrag = null;
+  isDraggingFromLibrary = false;
+
+  if (col) _dropActivityOnColumn(col, e.clientY, act);
+}
+
+function _dropActivityOnColumn(col, clientY, act) {
+  const day = col.dataset.day;
+
+  if (col.classList.contains('week-col')) {
+    const hour = _wkYToHour(col, clientY);
+    if (act.popup) { pendingDrop = { day, hour }; pendingAct = act; openModal(act); return; }
+    const newBlockData = {
+      id: uid(), day, startHour: hour, duration: appSettings.defaultBlockDuration / 60,
+      label: act.name, cat: act.cat, actId: act.id, items: null,
+    };
+    try {
+      const raw = localStorage.getItem(BLOCKS_KEY);
+      const all = raw ? JSON.parse(raw) : [];
+      all.push(newBlockData);
+      localStorage.setItem(BLOCKS_KEY, JSON.stringify(all));
+    } catch (err) {}
+    _createWeekBlock(newBlockData, col);
+  } else {
+    const hour = yToHour(col, clientY);
+    if (act.popup) { pendingDrop = { day, hour }; pendingAct = act; openModal(act); return; }
+    createBlock({ day, startHour: hour, duration: appSettings.defaultBlockDuration / 60, label: act.name, cat: act.cat, actId: act.id });
+    saveBlocks();
+  }
+}
+
 // ── Modal system ──────────────────────────────────────────────────────────────
 
 const modal        = document.getElementById('modal');
@@ -1696,9 +1826,9 @@ function createBlock({ day, startHour, duration, label, cat, actId, items, id })
     <div class="resize-handle"></div>`;
 
   block.addEventListener('contextmenu', e => showBlockContextMenu(e, block));
-  block.addEventListener('mousedown', onBlockMouseDown);
+  block.addEventListener('pointerdown', onBlockPointerDown);
 
-  block.querySelector('.resize-handle-top').addEventListener('mousedown', e => {
+  block.querySelector('.resize-handle-top').addEventListener('pointerdown', e => {
     e.preventDefault();
     e.stopPropagation();
     block.style.transition = 'none';
@@ -1713,7 +1843,7 @@ function createBlock({ day, startHour, duration, label, cat, actId, items, id })
     document.body.classList.add('is-resizing');
   });
 
-  block.querySelector('.resize-handle').addEventListener('mousedown', e => {
+  block.querySelector('.resize-handle').addEventListener('pointerdown', e => {
     e.preventDefault();
     e.stopPropagation();
     block.style.transition = 'none';
@@ -1733,29 +1863,82 @@ function createBlock({ day, startHour, duration, label, cat, actId, items, id })
   return block;
 }
 
+// ── Touch long-press helper ─────────────────────────────────────────────────
+// Mouse interactions grab immediately; touch/pen ones arm after a short press so
+// that a plain swipe still scrolls and a tap still counts as a click. Once armed
+// (finger held roughly still) onArm(clientX, clientY) begins the real drag.
+function armTouchLongPress(startEvent, onArm, { delay = 200, threshold = 10 } = {}) {
+  const sx = startEvent.clientX, sy = startEvent.clientY;
+  const pid = startEvent.pointerId;
+  let done = false;
+
+  const timer = setTimeout(() => {
+    if (done) return;
+    done = true;
+    cleanup();
+    onArm(sx, sy);
+  }, delay);
+
+  function onMove(ev) {
+    if (ev.pointerId !== pid || done) return;
+    if (Math.hypot(ev.clientX - sx, ev.clientY - sy) > threshold) {
+      done = true;         // moved first → treat as scroll, never arm
+      cleanup();
+    }
+  }
+  function onUp(ev) {
+    if (ev.pointerId !== pid) return;
+    done = true;           // released first → treat as tap/click
+    cleanup();
+  }
+  function cleanup() {
+    clearTimeout(timer);
+    document.removeEventListener('pointermove', onMove, true);
+    document.removeEventListener('pointerup', onUp, true);
+    document.removeEventListener('pointercancel', onUp, true);
+  }
+  document.addEventListener('pointermove', onMove, true);
+  document.addEventListener('pointerup', onUp, true);
+  document.addEventListener('pointercancel', onUp, true);
+}
+
 // ── Block drag ────────────────────────────────────────────────────────────────
 
-function onBlockMouseDown(e) {
-  if (e.button !== 0) return;
+function onBlockPointerDown(e) {
   if (e.target.closest('.resize-handle') || e.target.closest('.resize-handle-top')) return;
-
-  e.preventDefault();
-  e.stopPropagation();
-
-  hideBlockContextMenu();
+  if (e.target.closest('.block-name-input')) return;
 
   const block = e.currentTarget;
-  const rect  = block.getBoundingClientRect();
+
+  if (e.pointerType === 'mouse') {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    e.stopPropagation();
+    beginBlockDrag(block, e.clientX, e.clientY);
+    return;
+  }
+
+  // touch / pen: long-press to arm so scrolling and tapping still work
+  armTouchLongPress(e, (sx, sy) => {
+    block.style.touchAction = 'none';
+    beginBlockDrag(block, sx, sy);
+  });
+}
+
+function beginBlockDrag(block, clientX, clientY) {
+  hideBlockContextMenu();
+
+  const rect = block.getBoundingClientRect();
 
   activeBlockDrag = {
     block,
     originalCol: block.parentElement,
     originalTop: parseFloat(block.style.top),
-    offsetX: e.clientX - rect.left,
-    offsetY: e.clientY - rect.top,
+    offsetX: clientX - rect.left,
+    offsetY: clientY - rect.top,
     blockW:  rect.width,
-    startX:  e.clientX,
-    startY:  e.clientY,
+    startX:  clientX,
+    startY:  clientY,
     hasMoved: false,
   };
 
@@ -1806,8 +1989,10 @@ function handleBlockDragEnd(e) {
   if (!hasMoved) {
     block.style.transition = '';
     block.style.zIndex     = '';
+    block.style.touchAction = '';
     return;
   }
+  block.style.touchAction = '';
 
   _blockDragJustMoved = true;
   setTimeout(() => { _blockDragJustMoved = false; }, 0);
@@ -1859,7 +2044,7 @@ function setDragHoverCol(col) {
 
 // ── Resize ────────────────────────────────────────────────────────────────────
 
-document.addEventListener('mousemove', e => {
+document.addEventListener('pointermove', e => {
   if (activeWkInColDrag) { _handleWkInColDragMove(e); return; }
   if (activeWkCrossDrag) { _handleWkCrossDragMove(e); return; }
   if (activeBlockDrag) { handleBlockDragMove(e); return; }
@@ -1905,7 +2090,7 @@ document.addEventListener('mousemove', e => {
   updateBlockContent(block);
 });
 
-document.addEventListener('mouseup', e => {
+function onGlobalPointerUp(e) {
   if (activeWkInColDrag) { _handleWkInColDragEnd(e); return; }
   if (activeWkCrossDrag) { _handleWkCrossDragEnd(e); return; }
   if (activeBlockDrag) { handleBlockDragEnd(e); return; }
@@ -1932,7 +2117,9 @@ document.addEventListener('mouseup', e => {
     activeResize = null;
     document.body.classList.remove('is-resizing');
   }
-});
+}
+document.addEventListener('pointerup', onGlobalPointerUp);
+document.addEventListener('pointercancel', onGlobalPointerUp);
 
 // ── Context menu ──────────────────────────────────────────────────────────────
 
@@ -6605,15 +6792,24 @@ function initNav() {
       link.classList.add('active');
       document.getElementById(target)?.classList.add('active');
       if (target === 'home') { advanceAndSetBackground(); renderHomePage(); }
+      if (isMobileView()) closeDrawer();
     });
   });
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 
+const mobileMQ = window.matchMedia('(max-width: 768px)');
+function isMobileView() { return mobileMQ.matches; }
+
+function closeDrawer() {
+  document.querySelector('.app')?.classList.remove('drawer-open');
+}
+
 function initSidebarToggle() {
   const btn = document.getElementById('sidebarToggle');
   const app = document.querySelector('.app');
+  const scrim = document.getElementById('sidebarScrim');
   const STORAGE_KEY = 'simsi-sidebar-collapsed';
 
   // Apply saved state without animation
@@ -6624,9 +6820,19 @@ function initSidebarToggle() {
   }
 
   btn.addEventListener('click', () => {
+    if (isMobileView()) {
+      // Mobile: the button is a hamburger that opens the off-canvas drawer.
+      app.classList.toggle('drawer-open');
+      return;
+    }
     const collapsed = app.classList.toggle('sidebar-collapsed');
     localStorage.setItem(STORAGE_KEY, collapsed ? '1' : '0');
   });
+
+  scrim?.addEventListener('click', closeDrawer);
+
+  // Leaving mobile width should never leave a drawer stuck open.
+  mobileMQ.addEventListener('change', () => { if (!isMobileView()) closeDrawer(); });
 }
 
 document.addEventListener('visibilitychange', () => {
@@ -6988,7 +7194,7 @@ function _createWeekBlock(data, col) {
   if (hPx < 30) block.classList.add('block--tiny');
   if (hPx < 36) block.classList.add('block--no-badge');
 
-  block.querySelector('.resize-handle-top').addEventListener('mousedown', e => {
+  block.querySelector('.resize-handle-top').addEventListener('pointerdown', e => {
     e.preventDefault();
     e.stopPropagation();
     block.style.transition = 'none';
@@ -7003,7 +7209,7 @@ function _createWeekBlock(data, col) {
     document.body.classList.add('is-resizing');
   });
 
-  block.querySelector('.resize-handle').addEventListener('mousedown', e => {
+  block.querySelector('.resize-handle').addEventListener('pointerdown', e => {
     e.preventDefault();
     e.stopPropagation();
     block.style.transition = 'none';
@@ -7012,7 +7218,7 @@ function _createWeekBlock(data, col) {
   });
 
   block.addEventListener('contextmenu', e => _showWeekBlockCtxMenu(e, block));
-  block.addEventListener('mousedown', _onWkBlockMouseDown);
+  block.addEventListener('pointerdown', _onWkBlockPointerDown);
   col.appendChild(block);
 }
 
@@ -7115,25 +7321,37 @@ function _wkYToHour(col, clientY) {
   return Math.max(WEEK_DISPLAY_START_H, Math.min(WEEK_DISPLAY_END_H, raw));
 }
 
-function _onWkBlockMouseDown(e) {
-  if (e.button !== 0) return;
+function _onWkBlockPointerDown(e) {
   if (e.target.closest('.block-name-input')) return;
   if (e.target.closest('.resize-handle') || e.target.closest('.resize-handle-top')) return;
 
-  e.preventDefault();
-  e.stopPropagation();
-
   const block = e.currentTarget;
-  const rect  = block.getBoundingClientRect();
+
+  if (e.pointerType === 'mouse') {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    e.stopPropagation();
+    _beginWkBlockDrag(block, e.clientX, e.clientY);
+    return;
+  }
+
+  armTouchLongPress(e, (sx, sy) => {
+    block.style.touchAction = 'none';
+    _beginWkBlockDrag(block, sx, sy);
+  });
+}
+
+function _beginWkBlockDrag(block, clientX, clientY) {
+  const rect = block.getBoundingClientRect();
 
   activeWkCrossDrag = {
     block,
     sourceCol:    block.parentElement,
-    startX:       e.clientX,
-    startY:       e.clientY,
+    startX:       clientX,
+    startY:       clientY,
     startTime:    Date.now(),
-    offsetX:      e.clientX - rect.left,
-    offsetY:      e.clientY - rect.top,
+    offsetX:      clientX - rect.left,
+    offsetY:      clientY - rect.top,
     active:       false,
     ghost:        null,
     snapLine:     null,
@@ -7226,6 +7444,7 @@ function _handleWkCrossDragEnd(e) {
   const drag    = activeWkCrossDrag;
   activeWkCrossDrag = null;
 
+  drag.block.style.touchAction = '';
   document.body.classList.remove('is-wk-cross-dragging');
   if (drag.ghost)    { drag.ghost.remove(); }
   if (drag.snapLine) { drag.snapLine.remove(); }
@@ -7280,6 +7499,7 @@ function _handleWkInColDragMove(e) {
 function _handleWkInColDragEnd(e) {
   const { block } = activeWkInColDrag;
   activeWkInColDrag = null;
+  block.style.touchAction = '';
   document.body.classList.remove('is-wk-incol-dragging');
   const newTop  = parseFloat(block.style.top);
   const newHour = newTop / HOUR_H + WEEK_DISPLAY_START_H;
