@@ -4437,11 +4437,16 @@ body.auth-ready:not(.authed) .auth-gate { display: flex; }
     z-index: 1002;
     box-shadow: 0 0 40px rgba(0,0,0,0.6);
   }
-  .app.drawer-open .sidebar { transform: none; }
-  /* Neutralize desktop collapse behavior on mobile (class may persist from desktop) */
+  /* Neutralize desktop collapse behavior on mobile (class may persist from a
+     desktop session via localStorage). This must come BEFORE the drawer-open
+     rule so that, when both classes are present, drawer-open wins (equal
+     specificity → later source order decides). */
   .app.sidebar-collapsed .sidebar { transform: translateX(-100%); }
   .main,
   .app.sidebar-collapsed .main { margin-left: 0; }
+  /* Open drawer — also covers the case where sidebar-collapsed is still set. */
+  .app.drawer-open .sidebar,
+  .app.drawer-open.sidebar-collapsed .sidebar { transform: none; }
 
   /* Scrim */
   .sidebar-scrim {
