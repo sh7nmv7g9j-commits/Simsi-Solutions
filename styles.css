@@ -4411,9 +4411,14 @@ body.auth-ready:not(.authed) .auth-gate { display: flex; }
    ══════════════════════════════════════════════════════════════════════════════ */
 .resize-handle,
 .resize-handle-top { touch-action: none; }
-.time-block,
+.cal-block,
 .wk-block,
-.activity-chip     { touch-action: pan-y; }
+.activity-chip {
+  touch-action: pan-y;
+  -webkit-touch-callout: none;   /* no iOS long-press callout/magnifier */
+  -webkit-user-select: none;
+  user-select: none;
+}
 
 /* Scrim behind the mobile nav drawer — hidden entirely on desktop. */
 .sidebar-scrim { display: none; }

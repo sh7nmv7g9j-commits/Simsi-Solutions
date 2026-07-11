@@ -139,7 +139,7 @@ const ACTIVITIES = [
   { id:'fit',         name:'FIT Time',           cat:'academic', group:'academic' },
   { id:'piano',       name:'Practice Piano',     cat:'academic', group:'music'    },
   { id:'pianoLesson', name:'Piano Lesson',       cat:'academic', group:'music'    },
-  { id:'gym',      name:'Gym',      cat:'fitness',  group:'health',   popup:'dropdown', opts:['Chest','Back','Legs','Arms','Rest'], labelFn: s => `Gym: ${s}` },
+  { id:'gym',      name:'Gym',      cat:'fitness',  group:'health',   popup:'dropdown', opts:['Chest','Back','Legs','Arms','Abs','Rest'], labelFn: s => `Gym: ${s}` },
   { id:'shower',      name:'Cold Shower',        cat:'routine',  group:'health'   },
   { id:'chores',      name:'Chores',             cat:'life',     group:'home'     },
   { id:'mealprep',    name:'Meal Prep',          cat:'life',     group:'home'     },
@@ -631,7 +631,7 @@ function makeLibChip(act) {
       if (e.target.closest('.chip-del') ||
           e.target.closest('.chip-cat-pill') ||
           e.target.closest('.chip-drag-handle')) return;
-      armTouchLongPress(e, (sx, sy) => beginChipTouchDrag(act, chip, sx, sy));
+      armTouchLongPress(e, (sx, sy, pid) => beginChipTouchDrag(act, chip, sx, sy, pid));
     });
   }
 
@@ -1336,7 +1336,7 @@ function onColDrop(e) {
 // day or week column, release to drop. Reuses the same block-creation paths.
 let activeChipTouchDrag = null;
 
-function beginChipTouchDrag(act, chip, sx, sy) {
+function beginChipTouchDrag(act, chip, sx, sy, pid) {
   const rect  = chip.getBoundingClientRect();
   const ghost = chip.cloneNode(true);
   ghost.style.position      = 'fixed';
@@ -1349,7 +1349,7 @@ function beginChipTouchDrag(act, chip, sx, sy) {
   ghost.style.zIndex        = '9999';
   document.body.appendChild(ghost);
 
-  chip.style.touchAction = 'none';
+  _capturePointer(chip, pid);
   activeChipTouchDrag = { act, chip, ghost, offsetX: sx - rect.left, offsetY: sy - rect.top, hoverCol: null };
   activeDrag = act;
   isDraggingFromLibrary = true;
@@ -1831,6 +1831,7 @@ function createBlock({ day, startHour, duration, label, cat, actId, items, id })
   block.querySelector('.resize-handle-top').addEventListener('pointerdown', e => {
     e.preventDefault();
     e.stopPropagation();
+    _capturePointer(e.currentTarget, e.pointerId);
     block.style.transition = 'none';
     activeResize = {
       block,
@@ -1846,6 +1847,7 @@ function createBlock({ day, startHour, duration, label, cat, actId, items, id })
   block.querySelector('.resize-handle').addEventListener('pointerdown', e => {
     e.preventDefault();
     e.stopPropagation();
+    _capturePointer(e.currentTarget, e.pointerId);
     block.style.transition = 'none';
     activeResize = { block, type: 'bottom', startY: e.clientY, startH: block.offsetHeight + 2 };
     document.body.classList.add('is-resizing');
@@ -1876,7 +1878,7 @@ function armTouchLongPress(startEvent, onArm, { delay = 200, threshold = 10 } = 
     if (done) return;
     done = true;
     cleanup();
-    onArm(sx, sy);
+    onArm(sx, sy, pid);
   }, delay);
 
   function onMove(ev) {
@@ -1919,9 +1921,14 @@ function onBlockPointerDown(e) {
   }
 
   // touch / pen: long-press to arm so scrolling and tapping still work
-  armTouchLongPress(e, (sx, sy) => {
-    block.style.touchAction = 'none';
+  armTouchLongPress(e, (sx, sy, pid) => {
     beginBlockDrag(block, sx, sy);
+    _capturePointer(block, pid);
+    // Lift immediately so the grab is felt the instant the press registers,
+    // and place the tile exactly where it already sits (no jump).
+    _liftBlock(activeBlockDrag);
+    block.style.left = `${sx - activeBlockDrag.offsetX}px`;
+    block.style.top  = `${sy - activeBlockDrag.offsetY}px`;
   });
 }
 
@@ -1946,21 +1953,31 @@ function beginBlockDrag(block, clientX, clientY) {
   document.body.classList.add('is-block-dragging');
 }
 
+function _capturePointer(el, pid) {
+  if (pid == null) return;
+  try { el.setPointerCapture(pid); } catch (e) {}
+}
+
+// Detach the block from the grid into a free-floating fixed-position tile.
+function _liftBlock(drag) {
+  const { block, blockW } = drag;
+  block.style.position      = 'fixed';
+  block.style.right         = 'auto';
+  block.style.width         = `${blockW}px`;
+  block.style.opacity       = '0.78';
+  block.style.zIndex        = '50';
+  block.style.pointerEvents = 'none';
+  drag.hasMoved = true;
+}
+
 function handleBlockDragMove(e) {
   const drag = activeBlockDrag;
-  const { block, offsetX, offsetY, blockW, startX, startY } = drag;
+  const { block, offsetX, offsetY, startX, startY } = drag;
 
   if (!drag.hasMoved) {
     const dist = Math.hypot(e.clientX - startX, e.clientY - startY);
     if (dist < 4) return;
-
-    block.style.position      = 'fixed';
-    block.style.right         = 'auto';
-    block.style.width         = `${blockW}px`;
-    block.style.opacity       = '0.78';
-    block.style.zIndex        = '50';
-    block.style.pointerEvents = 'none';
-    drag.hasMoved = true;
+    _liftBlock(drag);
   }
 
   block.style.left = `${e.clientX - offsetX}px`;
@@ -2120,6 +2137,18 @@ function onGlobalPointerUp(e) {
 }
 document.addEventListener('pointerup', onGlobalPointerUp);
 document.addEventListener('pointercancel', onGlobalPointerUp);
+
+// While a drag/resize is active, block the browser's own scroll/zoom so the
+// gesture is smooth on touch. touch-action can't be changed mid-gesture (the
+// browser locks it in at touchstart), so a non-passive touchmove.preventDefault
+// is the reliable way to stop the page from scrolling under the finger.
+function _dragInProgress() {
+  return !!(activeBlockDrag || activeResize || activeChipTouchDrag ||
+            activeWkCrossDrag || activeWkInColDrag);
+}
+document.addEventListener('touchmove', e => {
+  if (_dragInProgress()) e.preventDefault();
+}, { passive: false });
 
 // ── Context menu ──────────────────────────────────────────────────────────────
 
@@ -7197,6 +7226,7 @@ function _createWeekBlock(data, col) {
   block.querySelector('.resize-handle-top').addEventListener('pointerdown', e => {
     e.preventDefault();
     e.stopPropagation();
+    _capturePointer(e.currentTarget, e.pointerId);
     block.style.transition = 'none';
     activeResize = {
       block,
@@ -7212,6 +7242,7 @@ function _createWeekBlock(data, col) {
   block.querySelector('.resize-handle').addEventListener('pointerdown', e => {
     e.preventDefault();
     e.stopPropagation();
+    _capturePointer(e.currentTarget, e.pointerId);
     block.style.transition = 'none';
     activeResize = { block, type: 'bottom', startY: e.clientY, startH: block.offsetHeight + 2 };
     document.body.classList.add('is-resizing');
@@ -7335,8 +7366,8 @@ function _onWkBlockPointerDown(e) {
     return;
   }
 
-  armTouchLongPress(e, (sx, sy) => {
-    block.style.touchAction = 'none';
+  armTouchLongPress(e, (sx, sy, pid) => {
+    _capturePointer(block, pid);
     _beginWkBlockDrag(block, sx, sy);
   });
 }
