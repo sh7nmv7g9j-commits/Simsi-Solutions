@@ -12,7 +12,7 @@ import {
   signInWithEmailAndPassword, createUserWithEmailAndPassword
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import {
-  getFirestore, doc, getDoc, setDoc
+  getFirestore, doc, getDoc, setDoc, onSnapshot
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 // ── The localStorage keys we sync (must match the keys used in app.js) ────────
@@ -43,6 +43,7 @@ let currentUid = null;
 let booted     = false;
 let hydrating  = false;   // suppress write-mirroring while we load cloud data
 let pushTimer  = null;
+let unsubSnapshot = null;  // onSnapshot() cleanup fn for the real-time listener
 
 // ── Write mirroring: wrap localStorage.setItem so every tracked write pushes ──
 // to Firestore (debounced). Installed once, before the app boots.
@@ -106,6 +107,106 @@ async function hydrateFromCloud(uid) {
     }
   } finally {
     hydrating = false;
+  }
+}
+
+// ── Real-time sync: apply REMOTE changes pushed from other devices ────────────
+// After boot we listen on the user's Firestore doc with onSnapshot. When another
+// device writes, we copy the changed values into localStorage and re-render only
+// the affected sections. The app.js render functions read from in-memory copies
+// of the data, so we first reload that in-memory state via the existing load*()
+// functions, then call the exact render functions. All of these are global
+// functions declared in app.js (loaded as a classic <script>).
+
+// Keys that feed the day/week schedule view.
+const SCHEDULE_KEYS = new Set([
+  'productive-v3-blocks',
+  'productive-v2-reminders',
+  'productive-v3-rise-times',
+  'productive-v3-lights-times',
+  'productive-v1-custom-acts',
+  'productive-v1-deleted-acts',
+  'simsi-v1-day-ranges',
+  'simsi-view-mode'
+]);
+
+function applyRemoteChanges(changed) {
+  // Reload in-memory state from localStorage for whatever changed, then
+  // re-render only the sections whose data actually changed.
+  let scheduleChanged = false;
+  for (const key of changed) {
+    if (SCHEDULE_KEYS.has(key)) { scheduleChanged = true; break; }
+  }
+
+  if (scheduleChanged) {
+    window.loadDayRanges?.();
+    window.loadCustomActivities?.();
+    window.loadDeletedActs?.();
+    window.loadTimes?.();
+    window.loadReminders?.();
+    window.loadBlocks?.();
+    // Re-render whichever view is currently active (day or week).
+    const weekActive =
+      document.querySelector('.view-mode-btn--active')?.dataset.mode === 'week';
+    if (weekActive) window.renderWeekView?.();
+    else            window.renderCurrentDay?.();
+  }
+
+  if (changed.has('simsi-habits')) {
+    window.loadHabits?.();
+    window.renderHabitsGrid?.();
+  }
+
+  if (changed.has('simsi-goals')) {
+    window.loadGoals?.();
+    window.renderGoalsGrid?.();
+  }
+
+  if (changed.has('simsi-settings')) {
+    window.loadSettings?.();   // loadSettings() reloads appSettings and calls applySettings()
+  }
+}
+
+function startRealtimeSync(uid) {
+  if (unsubSnapshot) return;   // already listening
+  unsubSnapshot = onSnapshot(
+    doc(db, 'users', uid),
+    (snapshot) => {
+      // ECHO PREVENTION: skip snapshots caused by this device's own writes.
+      if (snapshot.metadata.hasPendingWrites) return;
+      if (!snapshot.exists()) return;
+
+      const data = snapshot.data() || {};
+      const changed = new Set();
+
+      // Copy changed values into localStorage. Suppress write-mirroring while we
+      // do so (reusing the hydrate guard) to avoid pushing the data straight back.
+      hydrating = true;
+      try {
+        for (const key of Object.keys(data)) {
+          const incoming = data[key];
+          if (typeof incoming !== 'string') continue;
+          if (localStorage.getItem(key) !== incoming) {
+            localStorage.setItem(key, incoming);
+            changed.add(key);
+          }
+        }
+      } finally {
+        hydrating = false;
+      }
+
+      if (changed.size) applyRemoteChanges(changed);
+    },
+    (err) => {
+      console.error('[sync] realtime listener failed', err);
+    }
+  );
+}
+
+function stopRealtimeSync() {
+  if (unsubSnapshot) {
+    unsubSnapshot();
+    unsubSnapshot = null;
   }
 }
 
@@ -207,6 +308,7 @@ function wireGate() {
   const signOutBtn = $('signOutBtn');
   if (signOutBtn) {
     signOutBtn.addEventListener('click', async () => {
+      stopRealtimeSync();
       try { await signOut(auth); } catch (_) {}
       for (const key of SYNC_KEYS) localStorage.removeItem(key);
       location.reload();
@@ -223,6 +325,7 @@ getRedirectResult(auth).catch((err) => setAuthError(friendlyError(err)));
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
     currentUid = null;
+    stopRealtimeSync();
     showGate(true);
     return;
   }
@@ -247,6 +350,10 @@ onAuthStateChanged(auth, async (user) => {
     window.bootApp();
   }
   showGate(false);
+
+  // Now that the app is booted, listen for changes made on other devices and
+  // apply them live. Guarded so we only subscribe once per session.
+  startRealtimeSync(user.uid);
 });
 
 // Wire the gate as soon as the DOM is ready.
