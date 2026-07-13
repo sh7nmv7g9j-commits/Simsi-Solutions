@@ -12,7 +12,7 @@ import {
   signInWithEmailAndPassword, createUserWithEmailAndPassword
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import {
-  getFirestore, doc, getDoc, setDoc, onSnapshot
+  getFirestore, doc, getDoc, setDoc, onSnapshot, runTransaction
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 // ── The localStorage keys we sync (must match the keys used in app.js) ────────
@@ -33,6 +33,16 @@ const SYNC_KEYS = [
   'simsi-library-open'
 ];
 
+// localStorage key that tracks when local data was last changed (a Date.now()
+// millisecond number). Used for timestamp-based conflict resolution so stale
+// data can never overwrite newer data in Firestore.
+const LAST_MODIFIED_KEY = 'simsi-last-modified';
+
+function getLocalLastModified() {
+  const v = Number(localStorage.getItem(LAST_MODIFIED_KEY));
+  return Number.isFinite(v) && v > 0 ? v : 0;
+}
+
 const app  = initializeApp(window.__FIREBASE_CONFIG__);
 const auth = getAuth(app);
 const db   = getFirestore(app);
@@ -51,6 +61,10 @@ const _setItem = Storage.prototype.setItem;
 Storage.prototype.setItem = function (key, value) {
   _setItem.call(this, key, value);
   if (this === window.localStorage && !hydrating && currentUid && SYNC_KEYS.includes(key)) {
+    // Record when local data changed so the sync transaction can tell whether
+    // our data is newer than the cloud's. Written via _setItem so it doesn't
+    // recurse through this wrapper.
+    _setItem.call(window.localStorage, LAST_MODIFIED_KEY, String(Date.now()));
     schedulePush();
   }
 };
@@ -67,11 +81,58 @@ async function pushToCloud() {
     const v = localStorage.getItem(key);
     if (v !== null) payload[key] = v;
   }
+  // The timestamp of our local data (set whenever the user changes something).
+  const localLM = getLocalLastModified() || Date.now();
+  const ref = doc(db, 'users', currentUid);
+
+  // Run the write inside a transaction with timestamp-based conflict resolution
+  // so a device holding stale data can never clobber newer cloud data. We only
+  // decide inside the transaction (it may be retried on contention); any UI /
+  // localStorage side effects happen afterwards.
+  let staleRemote = null;
   try {
-    await setDoc(doc(db, 'users', currentUid), payload, { merge: true });
+    await runTransaction(db, async (tx) => {
+      staleRemote = null;
+      const snap = await tx.get(ref);
+      const remote = snap.exists() ? (snap.data() || {}) : {};
+      const remoteLM = Number(remote.lastModified) || 0;
+      if (localLM >= remoteLM) {
+        // Local is newer or equal → write local data (plus its timestamp).
+        tx.set(ref, { ...payload, lastModified: localLM }, { merge: true });
+      } else {
+        // Cloud is newer → abort our write and pull the cloud data down instead.
+        staleRemote = remote;
+      }
+    });
+    if (staleRemote) applyCloudData(staleRemote);
   } catch (err) {
     console.error('[sync] push failed', err);
   }
+}
+
+// Pull a Firestore document into localStorage key by key, sync the local
+// last-modified marker to the cloud's, and re-render the affected UI without a
+// page reload. Used when a push aborts because the cloud held newer data.
+function applyCloudData(data) {
+  const changed = new Set();
+  // Suppress write-mirroring while we copy (reusing the hydrate guard); we also
+  // write via _setItem so these copies never bounce back to the cloud.
+  hydrating = true;
+  try {
+    for (const key of SYNC_KEYS) {
+      const incoming = data[key];
+      if (typeof incoming !== 'string') continue;
+      if (localStorage.getItem(key) !== incoming) {
+        _setItem.call(window.localStorage, key, incoming);
+        changed.add(key);
+      }
+    }
+    const remoteLM = Number(data.lastModified) || 0;
+    _setItem.call(window.localStorage, LAST_MODIFIED_KEY, String(remoteLM));
+  } finally {
+    hydrating = false;
+  }
+  if (changed.size) applyRemoteChanges(changed);
 }
 
 // Immediate (non-debounced) flush of localStorage to Firestore. Used by the
@@ -95,6 +156,11 @@ async function hydrateFromCloud(uid) {
           localStorage.removeItem(key);
         }
       }
+      // Match the local marker to whatever timestamp the cloud carried, so the
+      // first post-load sync compares against a truthful baseline.
+      const remoteLM = Number(data.lastModified);
+      _setItem.call(window.localStorage, LAST_MODIFIED_KEY,
+        String(Number.isFinite(remoteLM) ? remoteLM : Date.now()));
     } else {
       // First-ever login for this account: seed the cloud doc from whatever is
       // already in localStorage (migrates existing local data into the cloud).
@@ -103,7 +169,10 @@ async function hydrateFromCloud(uid) {
         const v = localStorage.getItem(key);
         if (v !== null) payload[key] = v;
       }
+      const seedLM = getLocalLastModified() || Date.now();
+      payload.lastModified = seedLM;
       await setDoc(ref, payload, { merge: true });
+      _setItem.call(window.localStorage, LAST_MODIFIED_KEY, String(seedLM));
     }
   } finally {
     hydrating = false;
@@ -191,6 +260,12 @@ function startRealtimeSync(uid) {
             changed.add(key);
           }
         }
+        // Keep the local marker in step with the cloud's timestamp so this
+        // device won't later mistake its data for being newer than it is.
+        const remoteLM = Number(data.lastModified);
+        if (Number.isFinite(remoteLM)) {
+          _setItem.call(window.localStorage, LAST_MODIFIED_KEY, String(remoteLM));
+        }
       } finally {
         hydrating = false;
       }
@@ -208,6 +283,79 @@ function stopRealtimeSync() {
     unsubSnapshot();
     unsubSnapshot = null;
   }
+}
+
+// ── Auto-save (background) + Canva-style status indicator ─────────────────────
+// Every AUTOSAVE_INTERVAL ms while signed in, we push localStorage to Firestore
+// via the existing pushToCloud() and reflect progress in a subtle indicator that
+// sits just above the Reminders section. This is purely additive: it reuses the
+// existing sync path and never touches the conflict-resolution logic.
+const AUTOSAVE_INTERVAL = 180000;   // 3 minutes
+let autoSaveTimer     = null;
+let saveStatusEl      = null;
+let saveStatusHideTimer = null;
+
+// Inject the indicator once, just above the Reminders section in the sidebar.
+function mountSaveStatus() {
+  if (saveStatusEl) return;
+  const anchor = document.querySelector('.sidebar-bottom .reminders-section');
+  if (!anchor) return;
+  saveStatusEl = document.createElement('div');
+  saveStatusEl.id = 'autoSaveStatus';
+  saveStatusEl.className = 'autosave-status';
+  anchor.parentNode.insertBefore(saveStatusEl, anchor);
+}
+
+function unmountSaveStatus() {
+  if (saveStatusHideTimer) { clearTimeout(saveStatusHideTimer); saveStatusHideTimer = null; }
+  if (saveStatusEl) { saveStatusEl.remove(); saveStatusEl = null; }
+}
+
+// state: 'saving' | 'saved' | 'failed'
+function showSaveStatus(state) {
+  if (!saveStatusEl) return;
+  if (saveStatusHideTimer) { clearTimeout(saveStatusHideTimer); saveStatusHideTimer = null; }
+
+  if (state === 'saving') {
+    saveStatusEl.textContent = 'Saving...';
+    saveStatusEl.classList.remove('is-failed');
+    saveStatusEl.classList.add('is-visible');
+  } else if (state === 'saved') {
+    saveStatusEl.textContent = 'Saved ✓';
+    saveStatusEl.classList.remove('is-failed');
+    saveStatusEl.classList.add('is-visible');
+    // After 3s, fade out (opacity transition) and stay hidden until next cycle.
+    saveStatusHideTimer = setTimeout(() => {
+      if (saveStatusEl) saveStatusEl.classList.remove('is-visible');
+      saveStatusHideTimer = null;
+    }, 3000);
+  } else if (state === 'failed') {
+    saveStatusEl.textContent = 'Save failed';
+    saveStatusEl.classList.add('is-failed', 'is-visible');
+  }
+}
+
+async function autoSave() {
+  if (!currentUid) return;   // not signed in → skip silently
+  showSaveStatus('saving');
+  try {
+    if (navigator.onLine === false) throw new Error('offline');
+    await pushToCloud();
+    showSaveStatus('saved');
+  } catch (_) {
+    showSaveStatus('failed');
+  }
+}
+
+function startAutoSave() {
+  if (autoSaveTimer) return;   // already running
+  mountSaveStatus();
+  autoSaveTimer = setInterval(autoSave, AUTOSAVE_INTERVAL);
+}
+
+function stopAutoSave() {
+  if (autoSaveTimer) { clearInterval(autoSaveTimer); autoSaveTimer = null; }
+  unmountSaveStatus();
 }
 
 // ── UI helpers ────────────────────────────────────────────────────────────────
@@ -309,6 +457,7 @@ function wireGate() {
   if (signOutBtn) {
     signOutBtn.addEventListener('click', async () => {
       stopRealtimeSync();
+      stopAutoSave();
       try { await signOut(auth); } catch (_) {}
       for (const key of SYNC_KEYS) localStorage.removeItem(key);
       location.reload();
@@ -326,6 +475,7 @@ onAuthStateChanged(auth, async (user) => {
   if (!user) {
     currentUid = null;
     stopRealtimeSync();
+    stopAutoSave();
     showGate(true);
     return;
   }
@@ -354,6 +504,9 @@ onAuthStateChanged(auth, async (user) => {
   // Now that the app is booted, listen for changes made on other devices and
   // apply them live. Guarded so we only subscribe once per session.
   startRealtimeSync(user.uid);
+
+  // Kick off the 3-minute background auto-save loop + mount the status indicator.
+  startAutoSave();
 });
 
 // Wire the gate as soon as the DOM is ready.
