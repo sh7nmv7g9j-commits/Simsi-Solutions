@@ -252,6 +252,19 @@ function startRealtimeSync(uid) {
       if (!snapshot.exists()) return;
 
       const data = snapshot.data() || {};
+
+      // TIMESTAMP CONFLICT RESOLUTION (read path). pushToCloud() already refuses
+      // to overwrite newer cloud data; we must apply the mirror rule here or the
+      // two paths disagree. A local edit bumps LAST_MODIFIED immediately but only
+      // pushes after a 1.5s debounce, so during that window the cloud still holds
+      // the PRE-edit data. A snapshot carrying that stale data (the server-ack of
+      // an in-flight earlier/auto-save push, or another device) would otherwise
+      // clobber the fresh local edit and visibly revert it. Apply a snapshot only
+      // when the cloud is strictly newer than our local data; ties favour local,
+      // exactly as the write path does (localLM >= remoteLM lets local win).
+      const remoteLM = Number(data.lastModified) || 0;
+      if (remoteLM <= getLocalLastModified()) return;
+
       const changed = new Set();
 
       // Copy changed values into localStorage. Suppress write-mirroring while we
@@ -268,10 +281,8 @@ function startRealtimeSync(uid) {
         }
         // Keep the local marker in step with the cloud's timestamp so this
         // device won't later mistake its data for being newer than it is.
-        const remoteLM = Number(data.lastModified);
-        if (Number.isFinite(remoteLM)) {
-          _setItem.call(window.localStorage, LAST_MODIFIED_KEY, String(remoteLM));
-        }
+        // (remoteLM is guaranteed finite and > local by the guard above.)
+        _setItem.call(window.localStorage, LAST_MODIFIED_KEY, String(remoteLM));
       } finally {
         hydrating = false;
       }
