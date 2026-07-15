@@ -5251,6 +5251,96 @@ function updateHabitsScore() {
   if (el) el.textContent = `This Week: ${calcWeeklyScore()}%`;
 }
 
+// Number of weeks of history shown in each habit card's heatmap.
+// weeklyChecks retains full history, so 12 weeks is always available.
+const HABIT_HEATMAP_WEEKS = 12;
+
+// Build a GitHub-contributions-style heatmap for one habit: 12 columns (weeks,
+// oldest → newest left-to-right) × 7 rows (Mon → Sun, top-to-bottom).
+// This is a pure read-only view over habit.weeklyChecks and habit.pausedDays —
+// it never mutates stored data. Each cell reflects exactly one of three states:
+//   empty   → light gray
+//   paused  → muted amber/tan
+//   checked → full coral accent
+// Tapping a cell runs the same empty→checked→paused→empty cycle used elsewhere.
+function buildHabitHeatmap(habit) {
+  const wrap = document.createElement('div');
+  wrap.className = 'habit-heatmap';
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const todayISO = getDateISO(today);
+
+  for (let w = HABIT_HEATMAP_WEEKS - 1; w >= 0; w--) {
+    const weekKey = getWeekKeyForOffset(-w);
+    const wkMonday = getMondayOfISOWeek(weekKey);
+    const checks = habit.weeklyChecks?.[weekKey];
+    for (let i = 0; i < 7; i++) {
+      const cellDate = new Date(wkMonday);
+      cellDate.setDate(cellDate.getDate() + i);
+      const iso = getDateISO(cellDate);
+      const isFuture  = cellDate > today;
+      const disabled  = !!(habit.weekdaysOnly && i >= 5);
+      const isPaused  = isPausedOn(habit, iso);
+      const isChecked = !!(checks && checks[i]);
+
+      const cell = document.createElement('div');
+      cell.className = 'habit-hm-cell' +
+        (isPaused  ? ' habit-hm-cell--paused'  :
+         isChecked ? ' habit-hm-cell--checked' : ' habit-hm-cell--empty') +
+        (iso === todayISO       ? ' habit-hm-cell--today'    : '') +
+        (disabled || isFuture   ? ' habit-hm-cell--disabled' : '');
+      cell.title = iso + (isChecked ? ' · done' : isPaused ? ' · paused' : '');
+
+      // Only past/today, non-weekend-disabled cells are interactive.
+      if (!disabled && !isFuture) {
+        cell.addEventListener('mousedown', e => e.stopPropagation());
+        cell.addEventListener('click', e => {
+          e.stopPropagation(); // don't open the habit modal
+          cycleHabitDayState(habit.id, weekKey, i, iso);
+        });
+      }
+      wrap.appendChild(cell);
+    }
+  }
+  return wrap;
+}
+
+// Cycle a single day through empty → checked → paused → empty for any date.
+// This performs exactly the same data operations as the habit modal's per-day
+// handler (set weeklyChecks[weekKey][dayIdx]; add/remove the ISO date in
+// pausedDays) — no fields are renamed, migrated, or removed.
+function cycleHabitDayState(habitId, weekKey, dayIdx, isoDate) {
+  const h = habitsData.habits.find(x => x.id === habitId);
+  if (!h) return;
+  if (h.weekdaysOnly && dayIdx >= 5) return;
+  if (!h.weeklyChecks[weekKey]) h.weeklyChecks[weekKey] = Array(7).fill(false);
+
+  const isChecked = !!h.weeklyChecks[weekKey][dayIdx];
+  const isPaused  = isPausedOn(h, isoDate);
+
+  if (!isChecked && !isPaused) {
+    // EMPTY → CHECKED
+    h.weeklyChecks[weekKey][dayIdx] = true;
+    h.pausedDays = (h.pausedDays || []).filter(d => d !== isoDate);
+  } else if (isChecked && !isPaused) {
+    // CHECKED → PAUSED
+    h.weeklyChecks[weekKey][dayIdx] = false;
+    if (!Array.isArray(h.pausedDays)) h.pausedDays = [];
+    if (!h.pausedDays.includes(isoDate)) h.pausedDays.push(isoDate);
+  } else {
+    // PAUSED → EMPTY
+    h.weeklyChecks[weekKey][dayIdx] = false;
+    h.pausedDays = (h.pausedDays || []).filter(d => d !== isoDate);
+  }
+
+  h.streak = calcHabitStreak(h);
+  if (h.streak > (h.bestStreak || 0)) h.bestStreak = h.streak;
+  saveHabits();
+  renderHabitsGrid();
+  updateHabitsScore();
+}
+
 function renderHabitsGrid() {
   const grid = document.getElementById('habitsGrid');
   if (!grid) return;
@@ -5351,27 +5441,14 @@ function renderHabitsGrid() {
     nameEl.className = 'habit-card-name';
     nameEl.textContent = habit.name;
 
-    const dotsRow = document.createElement('div');
-    dotsRow.className = 'habit-card-dots';
-    for (let i = 0; i < 7; i++) {
-      const disabled = !!(habit.weekdaysOnly && i >= 5);
-      const dotDate = new Date(monday);
-      dotDate.setDate(dotDate.getDate() + i);
-      const dotPaused = isPausedOn(habit, getDateISO(dotDate));
-      const dot = document.createElement('div');
-      dot.className = 'habit-dot' +
-        (dotPaused                                              ? ' habit-dot--paused'    :
-         checks[i]                                             ? ' habit-dot--checked'   : '') +
-        (i === todayIdx                                        ? ' habit-dot--today'     : '') +
-        (disabled                                              ? ' habit-dot--disabled'  : '') +
-        (!dotPaused && checks[i] && i === todayIdx && !disabled ? ' habit-dot--today-done' : '');
-      dotsRow.appendChild(dot);
-    }
+    // Last-12-weeks contributions-graph style heatmap (replaces the old row of 7 dots).
+    // Read-only transform over existing weeklyChecks / pausedDays — no schema change.
+    const heatmap = buildHabitHeatmap(habit);
 
     content.appendChild(streakNum);
     content.appendChild(streakLbl);
     content.appendChild(nameEl);
-    content.appendChild(dotsRow);
+    content.appendChild(heatmap);
     card.appendChild(content);
 
     // Bottom-center quick-check button

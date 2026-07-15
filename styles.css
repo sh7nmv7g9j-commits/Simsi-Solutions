@@ -1921,6 +1921,100 @@ body.is-block-dragging * {
 .habits-add-input:focus { border-color: rgba(155, 114, 207, 0.4); }
 .habits-add-input::placeholder { color: #3a3a3a; }
 
+/* ══════════════════════════════════════════════════════════════════════════
+   Habit streak display — light restyle (Phase 1)
+
+   PHASE ACCENT COLOR (reuse this EXACT hex in later phases):  #D85A30
+   A single coral/orange used for every progress indicator and active/checked
+   state on this screen. Exposed as --habit-accent so later phases can pick it up.
+   All rules here are scoped under #habits so the rest of the app is untouched.
+   ══════════════════════════════════════════════════════════════════════════ */
+#habits {
+  --habit-accent: #D85A30;   /* coral accent — single source of truth for this screen */
+}
+
+/* Warm off-white / cream background instead of the dark card surface */
+#habits .habits-container { background: #FAF6EF; }
+#habits .habits-container::-webkit-scrollbar-thumb { background: #E2DACd; }
+#habits .habits-title      { color: #2E2A26; }
+#habits .habits-week-score { color: #8A7F72; }
+
+/* White cards, rounded, minimal border */
+#habits .habit-card {
+  background: #FFFFFF;
+  border: none;
+  border-radius: 14px;
+  box-shadow: 0 1px 3px rgba(70, 45, 20, 0.07);
+  min-height: 0;
+}
+#habits .habit-card--active { border: none; }
+#habits .habit-card--zero   { opacity: 0.7; }
+#habits .habit-card--done {
+  border: none;
+  box-shadow: 0 0 0 1.5px var(--habit-accent), 0 1px 3px rgba(70, 45, 20, 0.07);
+}
+#habits .habit-card-fill,
+#habits .habit-card--done .habit-card-fill { background: rgba(216, 90, 48, 0.06); }
+
+/* Typography — bold, larger streak number over quiet labels */
+#habits .habit-card-streak-num   { color: #2A2622; font-size: 32px; font-weight: 800; }
+#habits .habit-card-streak-label { color: #A99E8E; }
+#habits .habit-card-name         { color: #6B6155; font-weight: 600; }
+#habits .habit-best-streak       { color: #B0A594; }
+
+/* Delete-confirm overlay matches the new white card */
+#habits .habit-card-confirm { background: #FFFFFF; border-radius: 14px; }
+#habits .habit-confirm-text { color: #6B6155; }
+#habits .habit-confirm-no   { color: #B0A594; }
+#habits .habit-confirm-no:hover { color: #8A7F72; }
+
+/* Quick-check + done badge use the coral accent (not the old green) */
+#habits .habit-card-qc { border-color: #E0D8CC; color: #B0A594; }
+#habits .habit-card-qc:hover { border-color: var(--habit-accent); color: var(--habit-accent); }
+#habits .habit-card-qc--done,
+#habits .habit-card-qc--done:hover,
+#habits .habit-done-badge {
+  background: var(--habit-accent);
+  border-color: var(--habit-accent);
+  color: #fff;
+}
+#habits .habit-done-badge:hover { background: #C24E28; }
+
+/* ── Contributions-graph heatmap (12 weeks × 7 days) ── */
+#habits .habit-heatmap {
+  display: grid;
+  grid-template-rows: repeat(7, 11px);
+  grid-auto-flow: column;
+  grid-auto-columns: 11px;
+  gap: 3px;
+  justify-content: center;
+  margin-top: 12px;
+}
+#habits .habit-hm-cell {
+  width: 11px;
+  height: 11px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: transform 0.1s ease, background 0.12s ease;
+}
+/* The 3 required, at-a-glance-distinct states */
+#habits .habit-hm-cell--empty   { background: #E8E3DB; }             /* empty  = light gray  */
+#habits .habit-hm-cell--paused  { background: #D8A34C; }             /* paused = muted amber/tan */
+#habits .habit-hm-cell--checked { background: var(--habit-accent); } /* checked = full coral */
+/* Disabled (weekend on weekday-only habits, or future days) — inert, faded */
+#habits .habit-hm-cell--disabled {
+  background: #F1EDE6;
+  cursor: default;
+  opacity: 0.55;
+}
+#habits .habit-hm-cell--disabled.habit-hm-cell--paused  { background: #E7CFA0; }
+#habits .habit-hm-cell--disabled.habit-hm-cell--checked { background: #EBC0AD; }
+/* Today gets a subtle ring */
+#habits .habit-hm-cell--today {
+  box-shadow: 0 0 0 1.5px rgba(216, 90, 48, 0.55);
+}
+#habits .habit-hm-cell:not(.habit-hm-cell--disabled):hover { transform: scale(1.2); }
+
 /* ── Habit detail modal ── */
 
 .habit-modal-box { width: 340px; }
