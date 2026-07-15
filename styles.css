@@ -2015,9 +2015,23 @@ body.is-block-dragging * {
 }
 #habits .habit-hm-cell:not(.habit-hm-cell--disabled):hover { transform: scale(1.2); }
 
-/* ── Habit detail modal ── */
+/* ── Habit detail modal ──
+   Restyled to match the Phase 1 card-grid design system. Scoped to
+   .habit-modal-box so the shared base .modal-box (goals/settings/etc.) is
+   untouched. Reuses the EXACT Phase 1 values:
+     accent/checked #D85A30 · paused #D8A34C · empty #E8E3DB · cream #FAF6EF  */
 
-.habit-modal-box { width: 340px; }
+.habit-modal-box {
+  width: 340px;
+  --habit-accent: #D85A30;   /* same coral accent as the card grid */
+}
+
+/* White surface + light header, replacing the dark modal chrome */
+.modal-box.habit-modal-box { background: #FFFFFF; border: none; }
+.habit-modal-box .modal-hd { border-bottom: 1px solid #EFEAE2; }
+.habit-modal-box .modal-title { color: #2A2622; }
+.habit-modal-box .modal-x { color: #B0A594; }
+.habit-modal-box .modal-x:hover { color: #2A2622; }
 
 .habit-modal-body {
   padding: 20px 24px 28px;
@@ -2029,8 +2043,8 @@ body.is-block-dragging * {
 
 .habit-modal-streak {
   font-size: 32px;
-  font-weight: 700;
-  color: #f0f0f0;
+  font-weight: 800;
+  color: #2A2622;
   line-height: 1;
 }
 
@@ -2050,7 +2064,7 @@ body.is-block-dragging * {
   justify-content: center;
   background: none;
   border: none;
-  color: #888;
+  color: #A99E8E;
   font-size: 16px;
   cursor: pointer;
   border-radius: 4px;
@@ -2059,17 +2073,17 @@ body.is-block-dragging * {
 }
 
 .habit-week-nav-btn:not(:disabled):hover {
-  color: #f0f0f0;
+  color: #2A2622;
 }
 
 .habit-week-nav-btn:disabled {
-  opacity: 0.25;
+  opacity: 0.35;
   cursor: default;
 }
 
 .habit-week-nav-label {
   font-size: 11px;
-  color: #888;
+  color: #8A7F72;
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
@@ -2080,44 +2094,46 @@ body.is-block-dragging * {
   align-items: center;
 }
 
+/* Same 3-state color logic as the card-grid heatmap:
+   empty = light gray · paused = muted amber/tan · checked = coral accent */
 .habit-modal-dot {
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  border: 1.5px solid #333;
-  background: transparent;
+  border: none;
+  background: #E8E3DB;          /* empty  = light gray  */
   cursor: pointer;
-  transition: background 0.12s, border-color 0.12s, transform 0.1s;
+  transition: background 0.12s, box-shadow 0.12s, transform 0.1s;
   flex-shrink: 0;
 }
 
 .habit-modal-dot--checked {
-  background: var(--accent-color);
-  border-color: var(--accent-color);
+  background: var(--habit-accent);   /* checked = full coral #D85A30 */
 }
 
+.habit-modal-dot--paused {
+  background: #D8A34C;                /* paused = muted amber/tan */
+}
+
+/* Selected/today ring — restyled from the old purple to the coral accent */
 .habit-modal-dot--today {
-  box-shadow: 0 0 0 2.5px rgba(155, 114, 207, 0.4);
+  box-shadow: 0 0 0 2.5px rgba(216, 90, 48, 0.45);
+}
+
+.habit-modal-dot--paused.habit-modal-dot--today {
+  box-shadow: 0 0 0 2.5px rgba(216, 90, 48, 0.45);
 }
 
 .habit-modal-dot--disabled {
-  opacity: 0.25;
+  background: #F1EDE6;
+  opacity: 0.55;
   cursor: default;
   pointer-events: none;
 }
 
-.habit-modal-dot--paused {
-  background: #F0B429;
-  border-color: #F0B429;
-}
-
-.habit-modal-dot--paused.habit-modal-dot--today {
-  box-shadow: 0 0 0 2.5px rgba(240, 180, 41, 0.4);
-}
-
 .habit-modal-dot:not(.habit-modal-dot--disabled):hover {
   transform: scale(1.15);
-  border-color: rgba(155, 114, 207, 0.6);
+  box-shadow: 0 0 0 2px rgba(216, 90, 48, 0.35);
 }
 
 .habit-modal-day-labels {
@@ -2130,7 +2146,7 @@ body.is-block-dragging * {
   width: 24px;
   text-align: center;
   font-size: 9px;
-  color: #444;
+  color: #A99E8E;
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
@@ -2139,7 +2155,7 @@ body.is-block-dragging * {
   background: none;
   border: none;
   font-size: 11px;
-  color: #555;
+  color: #8A7F72;
   cursor: pointer;
   padding: 4px 8px;
   font-family: inherit;
@@ -2147,7 +2163,7 @@ body.is-block-dragging * {
   margin-top: 6px;
 }
 
-.habit-modal-pause-btn:hover { color: #F0B429; }
+.habit-modal-pause-btn:hover { color: #D8A34C; }
 
 /* ── Habit milestone rewards ─────────────────────────────────────────────────── */
 
