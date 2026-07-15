@@ -2947,14 +2947,23 @@ body.is-wk-incol-dragging * { cursor: grabbing !important; }
 }
 
 .countdown-value {
-  margin-top: 2px;
+  margin-top: 3px;
   font-family: 'Audiowide', sans-serif;
-  font-size: 10.5px;
-  letter-spacing: 0.02em;
-  color: var(--accent-color);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  /* Most prominent element in the card — larger than the 13px name above. */
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1.35;
+  /* Bright mint green: far higher contrast than the muted accent against
+     the warm card/background gradient bleeding through. */
+  color: #4ade80;
+  /* Thickens the glyphs (Audiowide ships a single weight) and lifts the text
+     off the translucent card for legibility over the warm gradient. */
+  -webkit-text-stroke: 0.3px currentColor;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.55);
+  /* Wrap gracefully instead of truncating when the text runs long. */
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .countdown-value--dayof {
