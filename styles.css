@@ -2837,6 +2837,170 @@ body.is-wk-incol-dragging * { cursor: grabbing !important; }
   text-transform: uppercase;
 }
 
+/* ── Countdowns widget (home hero) ── */
+
+.home-countdowns {
+  position: absolute;
+  top: 32px;
+  right: 32px;
+  z-index: 3;
+  width: 320px;
+  max-width: calc(100% - 48px);
+  max-height: calc(100% - 64px);
+  display: flex;
+  flex-direction: column;
+  background: rgba(18,18,18,0.62);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.45);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  overflow: hidden;
+}
+
+.countdowns-hd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 13px 14px 11px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  flex-shrink: 0;
+}
+
+.countdowns-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.92);
+}
+
+.countdowns-mark { color: var(--accent-color); flex-shrink: 0; }
+
+.countdowns-add-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.05);
+  color: rgba(255,255,255,0.75);
+  font-size: 17px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+.countdowns-add-btn:hover {
+  background: rgba(155,114,207,0.22);
+  border-color: rgba(155,114,207,0.55);
+  color: #fff;
+}
+
+.countdowns-list {
+  padding: 8px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.countdowns-empty {
+  padding: 14px 8px;
+  text-align: center;
+  font-size: 12px;
+  color: rgba(255,255,255,0.35);
+}
+
+.countdown-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 10px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.04);
+  transition: background 0.12s, border-color 0.12s;
+}
+.countdown-item:hover {
+  background: rgba(255,255,255,0.06);
+  border-color: rgba(255,255,255,0.09);
+}
+
+.countdown-main {
+  flex: 1;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.countdown-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.95);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.countdown-value {
+  margin-top: 2px;
+  font-family: 'Audiowide', sans-serif;
+  font-size: 10.5px;
+  letter-spacing: 0.02em;
+  color: var(--accent-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.countdown-value--dayof {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  color: #6fd39a;
+}
+
+.countdown-edit-btn {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  border: none;
+  background: transparent;
+  color: rgba(255,255,255,0.4);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.12s, color 0.12s;
+}
+.countdown-edit-btn:hover {
+  background: rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.9);
+}
+
+/* Countdown modal extras */
+.countdown-modal-error {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #ef8a8a;
+  min-height: 15px;
+  line-height: 1.35;
+}
+.countdown-delete-btn {
+  margin-right: auto;
+  background: rgba(239,68,68,0.12);
+  color: #ef8a8a;
+}
+.countdown-delete-btn:hover { background: rgba(239,68,68,0.2); }
+
+/* Render the native date-time picker (calendar icon + popup) in dark mode. */
+#countdownDateTimeInput { color-scheme: dark; }
+
 /* ── Sidebar toggle button ── */
 
 .sidebar-toggle {
@@ -4540,6 +4704,14 @@ body.auth-ready:not(.authed) .auth-gate { display: flex; }
     left: 20px;
     right: 20px;
     bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+  }
+  .home-countdowns {
+    top: calc(12px + env(safe-area-inset-top, 0px));
+    right: 12px;
+    left: 52px;               /* clear the sidebar/hamburger toggle */
+    width: auto;
+    max-width: none;
+    max-height: 40%;
   }
 
   /* ── Schedule header: allow wrapping, keep gutter for hamburger ── */

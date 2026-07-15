@@ -25,6 +25,7 @@ const SYNC_KEYS = [
   'productive-v1-deleted-acts',
   'simsi-v1-day-ranges',
   'simsi-goals',
+  'simsi-countdowns',
   'simsi-habits',
   'simsi-settings',
   'simsi-view-mode',
@@ -229,6 +230,11 @@ function applyRemoteChanges(changed) {
   if (changed.has('simsi-goals')) {
     window.loadGoals?.();
     window.renderGoalsGrid?.();
+  }
+
+  if (changed.has('simsi-countdowns')) {
+    window.loadCountdowns?.();       // reloads countdownsData and re-renders the widget
+    window.renderCountdownsWidget?.();
   }
 
   if (changed.has('simsi-settings')) {

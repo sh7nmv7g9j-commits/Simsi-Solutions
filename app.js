@@ -63,6 +63,7 @@ const DAY_RANGES_KEY   = 'simsi-v1-day-ranges';
 const CUSTOM_ACTS_KEY  = 'productive-v1-custom-acts';
 const DELETED_ACTS_KEY = 'productive-v1-deleted-acts';
 const GOALS_KEY = 'simsi-goals';
+const COUNTDOWNS_KEY = 'simsi-countdowns';
 const DEFAULT_RISE   = '6:00am';
 const DEFAULT_LIGHTS = '9:45pm';
 
@@ -205,6 +206,7 @@ let libCollapsed     = {};
 let customActivities = [];
 let deletedActIds    = new Set();
 let goalsData        = [];
+let countdownsData   = [];
 let _currentBookIdx  = 0;
 let _goalModalId = null;
 
@@ -1638,6 +1640,7 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape' && !document.getElementById('newGoalModal').classList.contains('hidden')) closeNewGoalModal();
   if (e.key === 'Escape' && !document.getElementById('editGoalModal').classList.contains('hidden')) closeEditGoalModal();
   if (e.key === 'Escape' && !document.getElementById('goalModal').classList.contains('hidden')) closeGoalModal();
+  if (e.key === 'Escape' && !document.getElementById('countdownModal')?.classList.contains('hidden')) closeCountdownModal();
 });
 
 // ── Shopping list viewer ──────────────────────────────────────────────────────
@@ -6807,6 +6810,321 @@ function renderHomePage() {
   }
 
   _homeClockInterval = setInterval(tickHomeClock, 1000);
+
+  // Countdowns widget lives on the home hero; (re)start its 1s ticker here so it
+  // stays in step with the home clock and never accumulates stray intervals.
+  startCountdownsTicker();
+}
+
+// ── Countdowns ────────────────────────────────────────────────────────────────
+// A "Countdowns" collection: like every other collection in this app it lives in
+// a single localStorage key (COUNTDOWNS_KEY) that auth.js mirrors into the user's
+// Firestore doc. It therefore rides the *existing* real-time onSnapshot sync and
+// the existing doc-level, timestamp-based (lastModified) conflict-resolution
+// transaction in auth.js — no separate/parallel sync mechanism is introduced.
+// Each countdown: { id, name, targetDateTime (local-naive ISO 8601),
+//                   createdAt, updatedAt }.
+
+let _countdownsInterval = null;
+let _countdownsSig      = null;   // signature of the visible set, to decide rebuild vs in-place tick
+
+const COUNTDOWN_CONGRATS = [
+  '🎉 You made it!',
+  '🥳 The big day is here!',
+  '🎊 It’s finally today!',
+  '✨ Today’s the day!',
+  '🎈 You made it — enjoy every second!',
+  '🙌 The wait is over!',
+];
+
+function saveCountdowns() {
+  localStorage.setItem(COUNTDOWNS_KEY, JSON.stringify(countdownsData));
+}
+
+function loadCountdowns() {
+  try {
+    const raw = localStorage.getItem(COUNTDOWNS_KEY);
+    countdownsData = raw ? JSON.parse(raw) : [];
+    if (!Array.isArray(countdownsData)) countdownsData = [];
+  } catch (e) {
+    countdownsData = [];
+  }
+  renderCountdownsWidget();
+}
+
+// Midnight-of-local-day timestamp — the reference for "same calendar day" checks.
+// Uses the browser's local timezone (Date getters are local), as required.
+function localDayStart(d) {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+}
+
+// Pick a (stable per-event) cheeky congrats line from the id.
+function countdownCongrats(c) {
+  let h = 0;
+  for (let i = 0; i < c.id.length; i++) h = (h * 31 + c.id.charCodeAt(i)) >>> 0;
+  return COUNTDOWN_CONGRATS[h % COUNTDOWN_CONGRATS.length];
+}
+
+// Resolve a countdown's display state for *now*:
+//   { visible, dayOf, target }
+// - past calendar day  → not visible (auto-removed starting the next local day)
+// - same calendar day  → visible, dayOf (show congrats message)
+// - future calendar day → visible, live countdown
+function countdownState(c, now) {
+  const target = new Date(c.targetDateTime);   // no offset ⇒ parsed in local time
+  if (isNaN(target.getTime())) return { visible: false };
+  const todayStart  = localDayStart(now);
+  const targetStart = localDayStart(target);
+  if (targetStart < todayStart)  return { visible: false };
+  if (targetStart === todayStart) return { visible: true, dayOf: true,  target };
+  return { visible: true, dayOf: false, target };
+}
+
+// Calendar-accurate breakdown of (target - now) into months/days/hours/minutes/
+// seconds. Months are counted by real calendar steps (setMonth), so "1 month"
+// spans the actual number of days in the month(s) crossed — not a flat 30 days.
+function countdownParts(now, target) {
+  let months = 0;
+  let cursor = new Date(now.getTime());
+  while (true) {
+    const next = new Date(cursor.getTime());
+    next.setMonth(next.getMonth() + 1);
+    if (next.getTime() <= target.getTime()) { cursor = next; months++; }
+    else break;
+  }
+  let rem = target.getTime() - cursor.getTime();
+  if (rem < 0) rem = 0;
+  const days    = Math.floor(rem / 86400000); rem -= days    * 86400000;
+  const hours   = Math.floor(rem / 3600000);  rem -= hours   * 3600000;
+  const minutes = Math.floor(rem / 60000);    rem -= minutes * 60000;
+  const seconds = Math.floor(rem / 1000);
+  return { months, days, hours, minutes, seconds };
+}
+
+// "X Months, Y Days, Z Hours, W Minutes, V Seconds" — but only from the highest
+// non-zero unit downward (no leading zero units), re-evaluated every tick.
+function formatCountdown(p) {
+  const units = [
+    [p.months,  'Month'],
+    [p.days,    'Day'],
+    [p.hours,   'Hour'],
+    [p.minutes, 'Minute'],
+    [p.seconds, 'Second'],
+  ];
+  let start = units.findIndex(u => u[0] > 0);
+  if (start === -1) start = units.length - 1;   // everything zero ⇒ show "0 Seconds"
+  return units.slice(start)
+    .map(([v, label]) => `${v} ${label}${v === 1 ? '' : 's'}`)
+    .join(', ');
+}
+
+// Visible countdowns, soonest-first.
+function visibleCountdowns(now) {
+  return countdownsData
+    .map(c => ({ c, st: countdownState(c, now) }))
+    .filter(x => x.st.visible)
+    .sort((a, b) => a.st.target.getTime() - b.st.target.getTime());
+}
+
+// A signature of the visible set + each item's day-of state. When it changes we
+// rebuild the DOM; otherwise the per-second tick only updates the number text.
+function countdownsSignature(items) {
+  return items.map(({ c, st }) => `${c.id}:${st.dayOf ? 'D' : 'C'}`).join('|');
+}
+
+function renderCountdownsWidget() {
+  const list = document.getElementById('countdownsList');
+  if (!list) return;
+  const now   = new Date();
+  const items = visibleCountdowns(now);
+  list.innerHTML = '';
+
+  if (!items.length) {
+    const empty = document.createElement('div');
+    empty.className = 'countdowns-empty';
+    empty.textContent = 'No countdowns yet.';
+    list.appendChild(empty);
+    _countdownsSig = '';
+    return;
+  }
+
+  items.forEach(({ c, st }) => {
+    const row = document.createElement('div');
+    row.className = 'countdown-item';
+    row.dataset.id = c.id;
+
+    const main = document.createElement('div');
+    main.className = 'countdown-main';
+    main.addEventListener('click', () => openCountdownModal(c));
+
+    const name = document.createElement('div');
+    name.className = 'countdown-name';
+    name.textContent = c.name;
+
+    const value = document.createElement('div');
+    value.className = 'countdown-value' + (st.dayOf ? ' countdown-value--dayof' : '');
+    value.textContent = st.dayOf
+      ? countdownCongrats(c)
+      : formatCountdown(countdownParts(now, st.target));
+
+    main.appendChild(name);
+    main.appendChild(value);
+
+    const editBtn = document.createElement('button');
+    editBtn.className = 'countdown-edit-btn';
+    editBtn.title = 'Edit countdown';
+    editBtn.setAttribute('aria-label', 'Edit countdown');
+    editBtn.innerHTML = '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg>';
+    editBtn.addEventListener('click', (e) => { e.stopPropagation(); openCountdownModal(c); });
+
+    row.appendChild(main);
+    row.appendChild(editBtn);
+    list.appendChild(row);
+  });
+
+  _countdownsSig = countdownsSignature(items);
+}
+
+// Per-second update. Rebuilds only when the visible set / day-of state changes
+// (add, delete, an event turning day-of, or one dropping off after its day);
+// otherwise just refreshes the number text in place — cheap and flicker-free.
+function tickCountdowns() {
+  const list = document.getElementById('countdownsList');
+  if (!list) return;
+  const now   = new Date();
+  const items = visibleCountdowns(now);
+  const sig   = countdownsSignature(items);
+  if (sig !== _countdownsSig) { renderCountdownsWidget(); return; }
+
+  items.forEach(({ c, st }) => {
+    if (st.dayOf) return;   // congrats text is static
+    const row = list.querySelector(`.countdown-item[data-id="${CSS.escape(c.id)}"]`);
+    const value = row && row.querySelector('.countdown-value');
+    if (value) value.textContent = formatCountdown(countdownParts(now, st.target));
+  });
+}
+
+function startCountdownsTicker() {
+  if (_countdownsInterval) { clearInterval(_countdownsInterval); _countdownsInterval = null; }
+  renderCountdownsWidget();
+  _countdownsInterval = setInterval(tickCountdowns, 1000);
+}
+
+// datetime-local <input> value ("YYYY-MM-DDTHH:mm") reconstructed from a stored
+// ISO string, in local wall-clock time.
+function toDateTimeLocalValue(iso) {
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '';
+  const p = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
+function openCountdownModal(existing) {
+  const modal     = document.getElementById('countdownModal');
+  const titleEl   = document.getElementById('countdownModalTitle');
+  const nameInput = document.getElementById('countdownNameInput');
+  const dtInput   = document.getElementById('countdownDateTimeInput');
+  const errEl     = document.getElementById('countdownModalError');
+  const delBtn    = document.getElementById('countdownModalDelete');
+  const confirmBtn = document.getElementById('countdownModalConfirm');
+  if (!modal) return;
+
+  errEl.textContent = '';
+  nameInput.style.borderColor = '';
+  dtInput.style.borderColor = '';
+
+  if (existing) {
+    titleEl.textContent = 'Edit Countdown';
+    nameInput.value = existing.name || '';
+    dtInput.value   = toDateTimeLocalValue(existing.targetDateTime);
+    modal.dataset.editId = existing.id;
+    delBtn.style.display = '';
+    confirmBtn.textContent = 'Save';
+  } else {
+    titleEl.textContent = 'New Countdown';
+    nameInput.value = '';
+    dtInput.value   = '';
+    delete modal.dataset.editId;
+    delBtn.style.display = 'none';
+    confirmBtn.textContent = 'Add';
+  }
+  modal.classList.remove('hidden');
+  setTimeout(() => nameInput.focus(), 40);
+}
+
+function closeCountdownModal() {
+  document.getElementById('countdownModal')?.classList.add('hidden');
+}
+
+function confirmCountdown() {
+  const modal     = document.getElementById('countdownModal');
+  const nameInput = document.getElementById('countdownNameInput');
+  const dtInput   = document.getElementById('countdownDateTimeInput');
+  const errEl     = document.getElementById('countdownModalError');
+  if (!modal) return;
+
+  const name  = nameInput.value.trim();
+  const dtVal = dtInput.value;   // "YYYY-MM-DDTHH:mm" (local), or "" if unset
+  errEl.textContent = '';
+  nameInput.style.borderColor = '';
+  dtInput.style.borderColor = '';
+
+  if (!name) {
+    errEl.textContent = 'Please enter an event name.';
+    nameInput.style.borderColor = 'rgba(239,68,68,0.7)';
+    nameInput.focus();
+    return;
+  }
+  if (!dtVal) {
+    errEl.textContent = 'Please pick a date and time.';
+    dtInput.style.borderColor = 'rgba(239,68,68,0.7)';
+    return;
+  }
+  const target = new Date(dtVal);   // parsed as local time
+  if (isNaN(target.getTime())) {
+    errEl.textContent = 'That date and time looks invalid.';
+    dtInput.style.borderColor = 'rgba(239,68,68,0.7)';
+    return;
+  }
+  if (target.getTime() <= Date.now()) {
+    errEl.textContent = 'That date and time is already in the past — pick a moment in the future.';
+    dtInput.style.borderColor = 'rgba(239,68,68,0.7)';
+    return;
+  }
+
+  // Store a local-naive ISO 8601 string (no offset ⇒ interpreted as local time),
+  // with seconds for a full date+time.
+  const iso   = dtVal.length === 16 ? `${dtVal}:00` : dtVal;
+  const nowIso = new Date().toISOString();
+  const editId = modal.dataset.editId;
+
+  if (editId) {
+    const c = countdownsData.find(x => x.id === editId);
+    if (c) {
+      c.name = name;
+      c.targetDateTime = iso;
+      c.updatedAt = nowIso;
+    }
+  } else {
+    countdownsData.push({
+      id: `cd-${uid()}`,
+      name,
+      targetDateTime: iso,
+      createdAt: nowIso,
+      updatedAt: nowIso,
+    });
+  }
+
+  saveCountdowns();
+  renderCountdownsWidget();
+  closeCountdownModal();
+}
+
+function deleteCountdown(id) {
+  countdownsData = countdownsData.filter(c => c.id !== id);
+  saveCountdowns();
+  renderCountdownsWidget();
+  closeCountdownModal();
 }
 
 // ── Navigation ────────────────────────────────────────────────────────────────
@@ -6896,6 +7214,29 @@ function bootApp() {
   setInterval(updateWeekActiveBlock, 60000);
   initHabits();
   loadGoals();
+  loadCountdowns();
+
+  const _countdownsAddBtn = document.getElementById('countdownsAddBtn');
+  if (_countdownsAddBtn) _countdownsAddBtn.addEventListener('click', () => openCountdownModal(null));
+
+  const _countdownModal        = document.getElementById('countdownModal');
+  const _countdownModalClose   = document.getElementById('countdownModalClose');
+  const _countdownModalCancel  = document.getElementById('countdownModalCancel');
+  const _countdownModalConfirm = document.getElementById('countdownModalConfirm');
+  const _countdownModalDelete  = document.getElementById('countdownModalDelete');
+  const _countdownNameInput    = document.getElementById('countdownNameInput');
+  if (_countdownModalClose)   _countdownModalClose.addEventListener('click', closeCountdownModal);
+  if (_countdownModalCancel)  _countdownModalCancel.addEventListener('click', closeCountdownModal);
+  if (_countdownModal)        _countdownModal.addEventListener('click', e => { if (e.target === _countdownModal) closeCountdownModal(); });
+  if (_countdownModalConfirm) _countdownModalConfirm.addEventListener('click', confirmCountdown);
+  if (_countdownModalDelete)  _countdownModalDelete.addEventListener('click', () => {
+    const id = _countdownModal?.dataset.editId;
+    if (id) deleteCountdown(id);
+  });
+  if (_countdownNameInput)    _countdownNameInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); confirmCountdown(); }
+  });
+
   const _bookLibraryBack = document.getElementById('bookLibraryBack');
   if (_bookLibraryBack) _bookLibraryBack.addEventListener('click', navigateToGoals);
 

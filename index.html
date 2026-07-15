@@ -115,6 +115,24 @@
             <div class="home-upnext" id="homeUpNext"></div>
             <div class="home-date-line" id="homeDateEl"></div>
           </div>
+
+          <!-- Countdowns widget -->
+          <div class="home-countdowns" id="homeCountdowns">
+            <div class="countdowns-hd">
+              <div class="countdowns-title">
+                <svg class="countdowns-mark" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <rect x="4" y="3.5" width="16" height="3" rx="1"/>
+                  <rect x="4" y="6.5" width="3" height="4.5" rx="1"/>
+                  <rect x="4" y="11" width="16" height="3" rx="1"/>
+                  <rect x="17" y="14" width="3" height="4.5" rx="1"/>
+                  <rect x="4" y="18.5" width="16" height="2.5" rx="1"/>
+                </svg>
+                Countdowns
+              </div>
+              <button class="countdowns-add-btn" id="countdownsAddBtn" aria-label="Add countdown">+</button>
+            </div>
+            <div class="countdowns-list" id="countdownsList"></div>
+          </div>
         </div>
       </section>
 
@@ -506,6 +524,32 @@
       <div class="modal-ft">
         <button id="editGoalModalCancel" class="modal-btn btn-ghost">Cancel</button>
         <button id="editGoalModalConfirm" class="modal-btn btn-accent">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Countdown add/edit modal -->
+  <div id="countdownModal" class="modal-overlay hidden">
+    <div class="modal-box">
+      <div class="modal-hd">
+        <span id="countdownModalTitle" class="modal-title">New Countdown</span>
+        <button id="countdownModalClose" class="modal-x">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="field-group">
+          <label class="field-label" for="countdownNameInput">Event Name</label>
+          <input type="text" class="field-input" id="countdownNameInput" placeholder="e.g. Trip to Switzerland" autocomplete="off">
+        </div>
+        <div class="field-group">
+          <label class="field-label" for="countdownDateTimeInput">Date &amp; Time</label>
+          <input type="datetime-local" class="field-input" id="countdownDateTimeInput">
+        </div>
+        <div class="countdown-modal-error" id="countdownModalError"></div>
+      </div>
+      <div class="modal-ft">
+        <button id="countdownModalDelete" class="modal-btn countdown-delete-btn" style="display:none">Delete</button>
+        <button id="countdownModalCancel" class="modal-btn btn-ghost">Cancel</button>
+        <button id="countdownModalConfirm" class="modal-btn btn-accent">Add</button>
       </div>
     </div>
   </div>
