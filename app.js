@@ -7174,6 +7174,33 @@ function initNav() {
   });
 }
 
+// Mobile bottom-nav "+" — context-aware add. It clicks the active section's
+// EXISTING add control, so it runs today's handler with no new behavior. It is
+// hidden on sections that have no single add action (e.g. Schedule). This does
+// not touch the nav switching in initNav(); the extra .nav-link listener only
+// keeps the "+" visibility in sync with the active section.
+function initBottomNavAdd() {
+  const btn = document.getElementById('bottomNavAdd');
+  if (!btn) return;
+  const addBtnBySection = {
+    home:   'countdownsAddBtn',
+    habits: 'habitsAddBtn',
+    goals:  'goalsAddBtn',
+  };
+  const currentSection = () =>
+    document.querySelector('.nav-link.active')?.dataset.section
+    || document.querySelector('.section.active')?.id;
+  const syncVisibility = () => {
+    btn.style.display = addBtnBySection[currentSection()] ? '' : 'none';
+  };
+  btn.addEventListener('click', () => {
+    document.getElementById(addBtnBySection[currentSection()])?.click();
+  });
+  document.querySelectorAll('.nav-link').forEach(l =>
+    l.addEventListener('click', syncVisibility));
+  syncVisibility();
+}
+
 // ── Init ──────────────────────────────────────────────────────────────────────
 
 const mobileMQ = window.matchMedia('(max-width: 768px)');
@@ -7232,6 +7259,7 @@ function bootApp() {
   initDayNav();
   initZoom();
   initNav();
+  initBottomNavAdd();
   initPanelToggles();
   initDayRangePanel();
   loadTimes();
