@@ -1939,6 +1939,94 @@ body.is-block-dragging * {
 #habits .habits-title      { color: #2E2A26; }
 #habits .habits-week-score { color: #8A7F72; }
 
+/* ── Active challenge / featured habit card ──────────────────────────────
+   Highlighted card for a habit-linked goal. LIGHT coral TINT background with
+   full-strength coral (--habit-accent #D85A30) for the icon, ring and bar so
+   the accent elements stay legible on top. Muted grays reuse the Phase 1 set. */
+#habits .habit-challenge-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 18px;
+  padding: 16px 18px;
+  border-radius: 16px;
+  background: rgba(216, 90, 48, 0.09);   /* pale coral tint */
+  box-shadow: inset 0 0 0 1px rgba(216, 90, 48, 0.14);
+  cursor: pointer;
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+#habits .habit-challenge-card:hover {
+  box-shadow: inset 0 0 0 1px rgba(216, 90, 48, 0.28), 0 2px 8px rgba(216, 90, 48, 0.12);
+  transform: translateY(-1px);
+}
+#habits .habit-challenge-icon {
+  flex-shrink: 0;
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(216, 90, 48, 0.15);   /* soft circular tint */
+  color: var(--habit-accent);            /* full-strength coral icon */
+}
+#habits .habit-challenge-main { flex: 1; min-width: 0; }
+#habits .habit-challenge-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--habit-accent);
+  margin-bottom: 2px;
+}
+#habits .habit-challenge-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #2A2622;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#habits .habit-challenge-bar {
+  margin-top: 9px;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(216, 90, 48, 0.16);
+  overflow: hidden;
+}
+#habits .habit-challenge-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: var(--habit-accent);       /* full-strength coral fill */
+  transition: width 0.3s ease;
+}
+#habits .habit-challenge-stat {
+  margin-top: 7px;
+  font-size: 12px;
+  color: #8A7F72;                        /* muted gray supporting stat */
+}
+#habits .habit-challenge-ring {
+  position: relative;
+  flex-shrink: 0;
+  width: 56px;
+  height: 56px;
+}
+#habits .habit-challenge-ring-track { stroke: rgba(216, 90, 48, 0.16); }
+#habits .habit-challenge-ring-value {
+  stroke: var(--habit-accent);           /* full-strength coral ring */
+  transition: stroke-dashoffset 0.4s ease;
+}
+#habits .habit-challenge-ring-pct {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--habit-accent);
+}
+
 /* White cards, rounded, minimal border */
 #habits .habit-card {
   background: #FFFFFF;
@@ -1980,40 +2068,79 @@ body.is-block-dragging * {
 }
 #habits .habit-done-badge:hover { background: #C24E28; }
 
-/* ── Contributions-graph heatmap (12 weeks × 7 days) ── */
-#habits .habit-heatmap {
-  display: grid;
-  grid-template-rows: repeat(7, 11px);
-  grid-auto-flow: column;
-  grid-auto-columns: 11px;
-  gap: 3px;
+/* ── Current-week row (single Mon–Sun row of state circles) ──
+   The ONE streak-display pattern, shared by BOTH the card grid and the detail
+   modal (so there is a single visual pattern across the whole habit tracker).
+   Replaces the old multi-week contributions heatmap and the modal's dot row.
+   Defined globally (not #habits-scoped) so it renders identically inside the
+   card and inside .habit-modal-box. Palette reuses the Phase 1 values:
+     checked = coral #D85A30 · paused #D8A34C · empty = gray outline ·
+     future (later this week / weekend-off) = lighter disabled outline. */
+.habit-week-row {
+  display: flex;
   justify-content: center;
+  gap: 8px;
   margin-top: 12px;
 }
-#habits .habit-hm-cell {
-  width: 11px;
-  height: 11px;
-  border-radius: 3px;
+.habit-week-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+.habit-week-circle {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  box-sizing: border-box;
+  border: 2px solid transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;                 /* checkmark stroke inside filled circles */
   cursor: pointer;
-  transition: transform 0.1s ease, background 0.12s ease;
+  transition: background 0.12s, border-color 0.12s, box-shadow 0.12s, transform 0.1s;
 }
-/* The 3 required, at-a-glance-distinct states */
-#habits .habit-hm-cell--empty   { background: #E8E3DB; }             /* empty  = light gray  */
-#habits .habit-hm-cell--paused  { background: #D8A34C; }             /* paused = muted amber/tan */
-#habits .habit-hm-cell--checked { background: var(--habit-accent); } /* checked = full coral */
-/* Disabled (weekend on weekday-only habits, or future days) — inert, faded */
-#habits .habit-hm-cell--disabled {
-  background: #F1EDE6;
+.habit-week-circle svg { width: 58%; height: 58%; display: block; }
+
+/* Empty = light gray outline only, no fill */
+.habit-week-circle--empty   { background: transparent; border-color: #E0D8CC; }
+/* Checked = solid coral fill + checkmark */
+.habit-week-circle--checked {
+  background: var(--habit-accent, #D85A30);
+  border-color: var(--habit-accent, #D85A30);
+}
+/* Paused = solid muted amber/tan fill, no checkmark */
+.habit-week-circle--paused  { background: #D8A34C; border-color: #D8A34C; }
+/* Today gets a subtle coral ring */
+.habit-week-circle--today   { box-shadow: 0 0 0 2.5px rgba(216, 90, 48, 0.45); }
+/* Future (later this week) or weekend-off day — lighter outline, inert */
+.habit-week-circle--future {
+  background: transparent;
+  border-color: #EFEAE2;
+  opacity: 0.6;
   cursor: default;
-  opacity: 0.55;
+  box-shadow: none;
+  pointer-events: none;
 }
-#habits .habit-hm-cell--disabled.habit-hm-cell--paused  { background: #E7CFA0; }
-#habits .habit-hm-cell--disabled.habit-hm-cell--checked { background: #EBC0AD; }
-/* Today gets a subtle ring */
-#habits .habit-hm-cell--today {
-  box-shadow: 0 0 0 1.5px rgba(216, 90, 48, 0.55);
+.habit-week-circle:not(.habit-week-circle--future):hover { transform: scale(1.12); }
+.habit-week-circle--empty:not(.habit-week-circle--future):hover {
+  border-color: var(--habit-accent, #D85A30);
 }
-#habits .habit-hm-cell:not(.habit-hm-cell--disabled):hover { transform: scale(1.2); }
+
+.habit-week-label {
+  font-size: 9px;
+  color: #A99E8E;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  line-height: 1;
+}
+
+/* Compact variant for the narrower 4-col card grid */
+.habit-week-row--sm { gap: 5px; margin-top: 10px; }
+.habit-week-row--sm .habit-week-circle { width: 18px; height: 18px; border-width: 1.5px; }
+.habit-week-row--sm .habit-week-circle--today { box-shadow: 0 0 0 1.5px rgba(216, 90, 48, 0.5); }
+.habit-week-row--sm .habit-week-label { font-size: 8px; }
 
 /* ── Habit detail modal ──
    Restyled to match the Phase 1 card-grid design system. Scoped to
@@ -2048,108 +2175,10 @@ body.is-block-dragging * {
   line-height: 1;
 }
 
-.habit-week-nav {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  padding: 12px 0;
-}
-
-.habit-week-nav-btn {
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: none;
-  border: none;
-  color: #A99E8E;
-  font-size: 16px;
-  cursor: pointer;
-  border-radius: 4px;
-  transition: color 0.12s;
-  flex-shrink: 0;
-}
-
-.habit-week-nav-btn:not(:disabled):hover {
-  color: #2A2622;
-}
-
-.habit-week-nav-btn:disabled {
-  opacity: 0.35;
-  cursor: default;
-}
-
-.habit-week-nav-label {
-  font-size: 11px;
-  color: #8A7F72;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
-
-.habit-modal-dots {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-}
-
-/* Same 3-state color logic as the card-grid heatmap:
-   empty = light gray · paused = muted amber/tan · checked = coral accent */
-.habit-modal-dot {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  border: none;
-  background: #E8E3DB;          /* empty  = light gray  */
-  cursor: pointer;
-  transition: background 0.12s, box-shadow 0.12s, transform 0.1s;
-  flex-shrink: 0;
-}
-
-.habit-modal-dot--checked {
-  background: var(--habit-accent);   /* checked = full coral #D85A30 */
-}
-
-.habit-modal-dot--paused {
-  background: #D8A34C;                /* paused = muted amber/tan */
-}
-
-/* Selected/today ring — restyled from the old purple to the coral accent */
-.habit-modal-dot--today {
-  box-shadow: 0 0 0 2.5px rgba(216, 90, 48, 0.45);
-}
-
-.habit-modal-dot--paused.habit-modal-dot--today {
-  box-shadow: 0 0 0 2.5px rgba(216, 90, 48, 0.45);
-}
-
-.habit-modal-dot--disabled {
-  background: #F1EDE6;
-  opacity: 0.55;
-  cursor: default;
-  pointer-events: none;
-}
-
-.habit-modal-dot:not(.habit-modal-dot--disabled):hover {
-  transform: scale(1.15);
-  box-shadow: 0 0 0 2px rgba(216, 90, 48, 0.35);
-}
-
-.habit-modal-day-labels {
-  display: flex;
-  gap: 10px;
-  margin-top: 4px;
-}
-
-.habit-modal-day-label {
-  width: 24px;
-  text-align: center;
-  font-size: 9px;
-  color: #A99E8E;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
+/* The modal's streak-row markup is now buildHabitWeekRow (.habit-week-row),
+   styled by the shared rules above — no modal-specific dot/nav CSS needed.
+   A little breathing room above the row inside the modal body. */
+.habit-modal-body .habit-week-row { margin-top: 10px; }
 
 .habit-modal-pause-btn {
   background: none;

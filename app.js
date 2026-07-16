@@ -5251,57 +5251,87 @@ function updateHabitsScore() {
   if (el) el.textContent = `This Week: ${calcWeeklyScore()}%`;
 }
 
-// Number of weeks of history shown in each habit card's heatmap.
-// weeklyChecks retains full history, so 12 weeks is always available.
-const HABIT_HEATMAP_WEEKS = 12;
+// Day-initial labels under each circle: Monday → Sunday.
+const HABIT_WEEK_DAY_LBL = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
-// Build a GitHub-contributions-style heatmap for one habit: 12 columns (weeks,
-// oldest → newest left-to-right) × 7 rows (Mon → Sun, top-to-bottom).
-// This is a pure read-only view over habit.weeklyChecks and habit.pausedDays —
-// it never mutates stored data. Each cell reflects exactly one of three states:
-//   empty   → light gray
-//   paused  → muted amber/tan
-//   checked → full coral accent
-// Tapping a cell runs the same empty→checked→paused→empty cycle used elsewhere.
-function buildHabitHeatmap(habit) {
+// Build the single current-week row (Monday → Sunday) of 7 state circles for a
+// habit. This is the ONE streak-display pattern used by BOTH the card grid and
+// the detail modal — it replaces the old multi-week contributions heatmap and
+// the modal's week-navigable dots. Each circle maps to exactly one calendar day
+// of the current week, so there's no ambiguity about what it represents.
+//
+// Read-only over weeklyChecks / pausedDays: the only mutations happen inside the
+// tap handlers, which reuse the EXISTING functions unchanged —
+//   • today  → toggleHabitDay()  (2-state check↔empty + milestone celebration)
+//   • past   → cycleHabitDayState() (3-state empty→checked→paused→empty)
+// Pausing *today* stays on the separate "Pause today" button. No schema/data
+// changes; no data migration.
+//
+// States: checked = coral fill + checkmark · paused = amber fill · empty = gray
+// outline · future (later this week, or weekend on a weekday-only habit) =
+// lighter disabled outline, inert (tapping does nothing).
+function buildHabitWeekRow(habit, opts = {}) {
+  const { compact = false, stopProp = false, afterChange = null } = opts;
   const wrap = document.createElement('div');
-  wrap.className = 'habit-heatmap';
+  wrap.className = 'habit-week-row' + (compact ? ' habit-week-row--sm' : '');
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const todayISO = getDateISO(today);
+  const wk       = getCurrentWeekKey();
+  const monday   = getMondayOfISOWeek(wk);
+  const checks   = habit.weeklyChecks?.[wk] || Array(7).fill(false);
+  const todayIdx = getTodayDayIndex();
 
-  for (let w = HABIT_HEATMAP_WEEKS - 1; w >= 0; w--) {
-    const weekKey = getWeekKeyForOffset(-w);
-    const wkMonday = getMondayOfISOWeek(weekKey);
-    const checks = habit.weeklyChecks?.[weekKey];
-    for (let i = 0; i < 7; i++) {
-      const cellDate = new Date(wkMonday);
-      cellDate.setDate(cellDate.getDate() + i);
-      const iso = getDateISO(cellDate);
-      const isFuture  = cellDate > today;
-      const disabled  = !!(habit.weekdaysOnly && i >= 5);
-      const isPaused  = isPausedOn(habit, iso);
-      const isChecked = !!(checks && checks[i]);
+  for (let i = 0; i < 7; i++) {
+    const cellDate = new Date(monday);
+    cellDate.setDate(cellDate.getDate() + i);
+    const iso        = getDateISO(cellDate);
+    const isToday    = i === todayIdx;
+    const isFuture   = cellDate > today;
+    const weekendOff = !!(habit.weekdaysOnly && i >= 5);
+    const inert      = isFuture || weekendOff;
+    const isPaused   = isPausedOn(habit, iso);
+    const isChecked  = !!checks[i];
 
-      const cell = document.createElement('div');
-      cell.className = 'habit-hm-cell' +
-        (isPaused  ? ' habit-hm-cell--paused'  :
-         isChecked ? ' habit-hm-cell--checked' : ' habit-hm-cell--empty') +
-        (iso === todayISO       ? ' habit-hm-cell--today'    : '') +
-        (disabled || isFuture   ? ' habit-hm-cell--disabled' : '');
-      cell.title = iso + (isChecked ? ' · done' : isPaused ? ' · paused' : '');
+    const col = document.createElement('div');
+    col.className = 'habit-week-col';
 
-      // Only past/today, non-weekend-disabled cells are interactive.
-      if (!disabled && !isFuture) {
-        cell.addEventListener('mousedown', e => e.stopPropagation());
-        cell.addEventListener('click', e => {
-          e.stopPropagation(); // don't open the habit modal
-          cycleHabitDayState(habit.id, weekKey, i, iso);
-        });
-      }
-      wrap.appendChild(cell);
+    const circle = document.createElement('div');
+    circle.className = 'habit-week-circle' +
+      (isPaused  ? ' habit-week-circle--paused'  :
+       isChecked ? ' habit-week-circle--checked' : ' habit-week-circle--empty') +
+      (isToday ? ' habit-week-circle--today'  : '') +
+      (inert   ? ' habit-week-circle--future' : '');
+    circle.title = iso +
+      (isChecked ? ' · done' : isPaused ? ' · paused' : '') +
+      (isFuture ? ' · upcoming' : '');
+
+    // Checkmark only inside checked (not paused) circles.
+    if (isChecked && !isPaused) {
+      circle.innerHTML = '<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="2,7 6,11 12,3"/></svg>';
     }
+
+    // Future / weekend-off circles are inert — tapping them does nothing.
+    if (!inert) {
+      if (stopProp) circle.addEventListener('mousedown', e => e.stopPropagation());
+      circle.addEventListener('click', e => {
+        if (stopProp) e.stopPropagation(); // don't open the habit modal
+        if (isToday) {
+          toggleHabitDay(habit.id, i);               // today: 2-state + milestone
+        } else {
+          cycleHabitDayState(habit.id, wk, i, iso);  // past: 3-state cycle
+        }
+        if (afterChange) afterChange();
+      });
+    }
+
+    const lbl = document.createElement('div');
+    lbl.className = 'habit-week-label';
+    lbl.textContent = HABIT_WEEK_DAY_LBL[i];
+
+    col.appendChild(circle);
+    col.appendChild(lbl);
+    wrap.appendChild(col);
   }
   return wrap;
 }
@@ -5341,12 +5371,103 @@ function cycleHabitDayState(habitId, weekKey, dayIdx, isoDate) {
   updateHabitsScore();
 }
 
+// ── Active challenge / featured habit card ──────────────────────────────────
+// Surfaces an existing "habit-linked" goal (goalsData) as a highlighted card at
+// the top of the Habits screen. Purely a read-only view over existing data —
+// no schema changes. Reuses the Phase 1 coral accent (#D85A30) via CSS.
+function renderActiveChallenge() {
+  const container = document.querySelector('#habits .habits-container');
+  const grid = document.getElementById('habitsGrid');
+  if (!container || !grid) return;
+
+  // Always clear any previously rendered card so this render is the source of truth.
+  const existing = document.getElementById('habitsChallenge');
+  if (existing) existing.remove();
+
+  // Genuine data concept: goals of type 'habit-linked' pointing at a live habit.
+  const candidates = (goalsData || [])
+    .filter(g => g.type === 'habit-linked' && habitsData.habits.some(h => h.id === g.habitId))
+    .map(g => {
+      const habit  = habitsData.habits.find(h => h.id === g.habitId);
+      const streak = calcHabitStreak(habit);
+      const target = g.streakTarget || 30;
+      const pct    = target > 0 ? Math.min(100, Math.round((streak / target) * 100)) : 0;
+      return { g, habit, streak, target, pct };
+    });
+  if (!candidates.length) return;
+
+  // Feature the most "active" challenge: the closest-to-target one still in
+  // progress; if all are complete, fall back to the furthest along.
+  const inProgress = candidates.filter(c => c.pct < 100);
+  const pool = inProgress.length ? inProgress : candidates;
+  const { g, habit, streak, target, pct } = pool.sort((a, b) => b.pct - a.pct)[0];
+  const daysLeft = Math.max(0, target - streak);
+
+  const card = document.createElement('div');
+  card.className = 'habit-challenge-card';
+  card.id = 'habitsChallenge';
+
+  const icon = document.createElement('div');
+  icon.className = 'habit-challenge-icon';
+  icon.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/></svg>';
+
+  const main = document.createElement('div');
+  main.className = 'habit-challenge-main';
+
+  const label = document.createElement('div');
+  label.className = 'habit-challenge-label';
+  label.textContent = 'Active Challenge';
+
+  const titleEl = document.createElement('div');
+  titleEl.className = 'habit-challenge-title';
+  titleEl.textContent = g.title || habit.name;
+
+  const bar = document.createElement('div');
+  bar.className = 'habit-challenge-bar';
+  const barFill = document.createElement('div');
+  barFill.className = 'habit-challenge-bar-fill';
+  barFill.style.width = `${pct}%`;
+  bar.appendChild(barFill);
+
+  const stat = document.createElement('div');
+  stat.className = 'habit-challenge-stat';
+  stat.textContent = pct >= 100
+    ? `Goal reached — ${streak} day streak`
+    : `${streak} of ${target} days · ${daysLeft} ${daysLeft === 1 ? 'day' : 'days'} left`;
+
+  main.appendChild(label);
+  main.appendChild(titleEl);
+  main.appendChild(bar);
+  main.appendChild(stat);
+
+  const C = 2 * Math.PI * 22;                 // ring circumference (r=22)
+  const ring = document.createElement('div');
+  ring.className = 'habit-challenge-ring';
+  ring.innerHTML =
+    `<svg width="56" height="56" viewBox="0 0 56 56">` +
+    `<circle class="habit-challenge-ring-track" cx="28" cy="28" r="22" fill="none" stroke-width="5"/>` +
+    `<circle class="habit-challenge-ring-value" cx="28" cy="28" r="22" fill="none" stroke-width="5" ` +
+    `stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${C * (1 - pct / 100)}" ` +
+    `transform="rotate(-90 28 28)"/></svg>` +
+    `<span class="habit-challenge-ring-pct">${pct}%</span>`;
+
+  card.appendChild(icon);
+  card.appendChild(main);
+  card.appendChild(ring);
+
+  // Keep the linked habit fully reachable — open its detail modal on click.
+  card.addEventListener('click', () => openHabitModal(habit));
+
+  container.insertBefore(card, grid);
+}
+
 function renderHabitsGrid() {
   const grid = document.getElementById('habitsGrid');
   if (!grid) return;
 
   updateHabitsScore();
   sortHabits();
+  renderActiveChallenge();
   grid.innerHTML = '';
 
   const todayIdx = getTodayDayIndex();
@@ -5441,14 +5562,16 @@ function renderHabitsGrid() {
     nameEl.className = 'habit-card-name';
     nameEl.textContent = habit.name;
 
-    // Last-12-weeks contributions-graph style heatmap (replaces the old row of 7 dots).
+    // Single current-week row (Mon–Sun) — same pattern as the detail modal.
     // Read-only transform over existing weeklyChecks / pausedDays — no schema change.
-    const heatmap = buildHabitHeatmap(habit);
+    // stopProp keeps circle taps from opening the modal; toggleHabitDay /
+    // cycleHabitDayState both re-render the grid, so no afterChange is needed.
+    const weekRow = buildHabitWeekRow(habit, { compact: true, stopProp: true });
 
     content.appendChild(streakNum);
     content.appendChild(streakLbl);
     content.appendChild(nameEl);
-    content.appendChild(heatmap);
+    content.appendChild(weekRow);
     card.appendChild(content);
 
     // Bottom-center quick-check button
@@ -5545,14 +5668,6 @@ function renderHabitsGrid() {
 }
 
 let _habitModalId = null;
-let _habitModalWeekOffset = 0;
-let _habitModalSelectedDayIdx = null;
-
-function getWeekKeyForOffset(offset) {
-  const d = new Date();
-  d.setDate(d.getDate() + offset * 7);
-  return getISOWeekKey(d);
-}
 
 function getMondayOfISOWeek(weekKey) {
   const [yearStr, weekStr] = weekKey.split('-W');
@@ -5565,17 +5680,8 @@ function getMondayOfISOWeek(weekKey) {
 
 const WEEK_MONTH_ABBR = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
-function formatWeekRange(weekKey) {
-  const monday = getMondayOfISOWeek(weekKey);
-  const sunday = new Date(monday);
-  sunday.setDate(sunday.getDate() + 6);
-  return `${WEEK_MONTH_ABBR[monday.getMonth()]} ${monday.getDate()} – ${WEEK_MONTH_ABBR[sunday.getMonth()]} ${sunday.getDate()}`;
-}
-
 function openHabitModal(habit) {
   _habitModalId = habit.id;
-  _habitModalWeekOffset = 0;
-  _habitModalSelectedDayIdx = null;
   const modal = document.getElementById('habitModal');
   const title = document.getElementById('habitModalTitle');
   const body  = document.getElementById('habitModalBody');
@@ -5584,147 +5690,39 @@ function openHabitModal(habit) {
   modal.classList.remove('hidden');
 }
 
+// The habit detail modal now shows ONLY the current week — the same single
+// current-week circle row used on the card (buildHabitWeekRow). No week
+// navigation, no scrolling history, no multi-week grid. Interaction is
+// unchanged: today's circle toggles via toggleHabitDay() (2-state + milestone),
+// past days cycle via cycleHabitDayState() (3-state), future days are inert, and
+// pausing *today* stays on the "Pause today" button below the row.
 function renderHabitModalBody(body, habit) {
-  const weekOffset  = _habitModalWeekOffset;
-  const weekKey     = getWeekKeyForOffset(weekOffset);
-  const checks      = habit.weeklyChecks?.[weekKey] || Array(7).fill(false);
-  const isCurrentWk = weekOffset === 0;
-  const todayIdx    = isCurrentWk ? getTodayDayIndex() : -1;
-  const DAY_LBL     = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-  const modalMonday = getMondayOfISOWeek(weekKey);
-
   body.innerHTML = '';
 
   const streakEl = document.createElement('div');
   streakEl.className = 'habit-modal-streak';
   streakEl.textContent = `⚡ ${habit.streak}`;
 
-  // Week navigation bar
-  const navBar = document.createElement('div');
-  navBar.className = 'habit-week-nav';
-
-  const prevBtn = document.createElement('button');
-  prevBtn.className = 'habit-week-nav-btn';
-  prevBtn.innerHTML = '&#8592;';
-  prevBtn.disabled  = weekOffset <= -4;
-  prevBtn.addEventListener('click', () => {
-    if (_habitModalWeekOffset > -4) {
-      _habitModalWeekOffset--;
+  // Single current-week row. Tap handlers already persist + re-render the grid;
+  // afterChange re-renders this modal body so it reflects the new state.
+  const weekRow = buildHabitWeekRow(habit, {
+    compact: false,
+    stopProp: false,
+    afterChange: () => {
       const h = habitsData.habits.find(x => x.id === _habitModalId);
       if (h) renderHabitModalBody(body, h);
-    }
+    },
   });
-
-  const weekLbl = document.createElement('div');
-  weekLbl.className = 'habit-week-nav-label';
-  if (weekOffset === 0)       weekLbl.textContent = 'This Week';
-  else if (weekOffset === -1) weekLbl.textContent = 'Last Week';
-  else                        weekLbl.textContent = formatWeekRange(weekKey);
-
-  const nextBtn = document.createElement('button');
-  nextBtn.className = 'habit-week-nav-btn';
-  nextBtn.innerHTML = '&#8594;';
-  nextBtn.disabled  = weekOffset >= 0;
-  nextBtn.addEventListener('click', () => {
-    if (_habitModalWeekOffset < 0) {
-      _habitModalWeekOffset++;
-      const h = habitsData.habits.find(x => x.id === _habitModalId);
-      if (h) renderHabitModalBody(body, h);
-    }
-  });
-
-  navBar.appendChild(prevBtn);
-  navBar.appendChild(weekLbl);
-  navBar.appendChild(nextBtn);
-
-  const dotsRow = document.createElement('div');
-  dotsRow.className = 'habit-modal-dots';
-
-  const labelsRow = document.createElement('div');
-  labelsRow.className = 'habit-modal-day-labels';
-
-  for (let i = 0; i < 7; i++) {
-    const disabled = !!(habit.weekdaysOnly && i >= 5);
-    const dotDate = new Date(modalMonday);
-    dotDate.setDate(dotDate.getDate() + i);
-    const dotISO = getDateISO(dotDate);
-    const dotPaused = isPausedOn(habit, dotISO);
-    const dot = document.createElement('div');
-    dot.className = 'habit-modal-dot' +
-      (dotPaused      ? ' habit-modal-dot--paused'   :
-       checks[i]      ? ' habit-modal-dot--checked'  : '') +
-      (i === todayIdx ? ' habit-modal-dot--today'     : '') +
-      (disabled       ? ' habit-modal-dot--disabled'  : '');
-    if (!disabled) {
-      dot.addEventListener('click', () => {
-        if (!isCurrentWk) _habitModalSelectedDayIdx = i;
-        const h = habitsData.habits.find(x => x.id === _habitModalId);
-        if (!h) return;
-
-        if (i !== todayIdx) {
-          const dotDate = new Date(modalMonday);
-          dotDate.setDate(dotDate.getDate() + i);
-          const dotISO = getDateISO(dotDate);
-          const isChecked = !!(checks[i]);
-          const isPaused = isPausedOn(h, dotISO);
-
-          if (!isChecked && !isPaused) {
-            // EMPTY → CHECKED
-            h.weeklyChecks[weekKey][i] = true;
-            h.pausedDays = (h.pausedDays || []).filter(d => d !== dotISO);
-          } else if (isChecked && !isPaused) {
-            // CHECKED → PAUSED
-            h.weeklyChecks[weekKey][i] = false;
-            if (!Array.isArray(h.pausedDays)) h.pausedDays = [];
-            if (!h.pausedDays.includes(dotISO)) h.pausedDays.push(dotISO);
-          } else {
-            // PAUSED → EMPTY
-            h.weeklyChecks[weekKey][i] = false;
-            h.pausedDays = (h.pausedDays || []).filter(d => d !== dotISO);
-          }
-
-          h.streak = calcHabitStreak(h);
-          if (h.streak > (h.bestStreak || 0)) h.bestStreak = h.streak;
-          saveHabits();
-          renderHabitsGrid();
-          updateHabitsScore();
-          renderHabitModalBody(body, h);
-        } else {
-          if (isPausedOn(h, dotISO)) {
-            h.pausedDays = h.pausedDays.filter(d => d !== dotISO);
-            h.streak = calcHabitStreak(h);
-            if (h.streak > (h.bestStreak || 0)) h.bestStreak = h.streak;
-            saveHabits();
-            renderHabitsGrid();
-            updateHabitsScore();
-            renderHabitModalBody(body, h);
-          } else {
-            if (isCurrentWk) {
-              toggleHabitDay(_habitModalId, i);
-            } else {
-              toggleHabitDayForWeek(_habitModalId, weekKey, i);
-            }
-            const h2 = habitsData.habits.find(x => x.id === _habitModalId);
-            if (h2) renderHabitModalBody(body, h2);
-          }
-        }
-      });
-    }
-    dotsRow.appendChild(dot);
-
-    const lbl = document.createElement('div');
-    lbl.className = 'habit-modal-day-label';
-    lbl.textContent = DAY_LBL[i];
-    labelsRow.appendChild(lbl);
-  }
 
   body.appendChild(streakEl);
-  body.appendChild(navBar);
-  body.appendChild(dotsRow);
-  body.appendChild(labelsRow);
+  body.appendChild(weekRow);
 
-  if (isCurrentWk) {
-    const todayPauseISO = getDateISO(new Date());
+  // "Pause today" — today's circle is a 2-state check toggle (to preserve the
+  // milestone celebration), so pausing today happens here, exactly as before.
+  // Hidden when today is a weekend on a weekday-only habit (nothing to pause).
+  const todayPauseISO   = getDateISO(new Date());
+  const todayWeekendOff = !!(habit.weekdaysOnly && getTodayDayIndex() >= 5);
+  if (!todayWeekendOff) {
     const isTodayPaused = isPausedOn(habit, todayPauseISO);
     const pauseTodayBtn = document.createElement('button');
     pauseTodayBtn.className = 'habit-modal-pause-btn';
@@ -5746,52 +5744,7 @@ function renderHabitModalBody(body, habit) {
       renderHabitModalBody(body, h);
     });
     body.appendChild(pauseTodayBtn);
-  } else if (_habitModalSelectedDayIdx !== null) {
-    const DAY_NAMES = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
-    const selDate = new Date(modalMonday);
-    selDate.setDate(selDate.getDate() + _habitModalSelectedDayIdx);
-    const selISO     = getDateISO(selDate);
-    const selDayName = DAY_NAMES[_habitModalSelectedDayIdx];
-    const isSelPaused = isPausedOn(habit, selISO);
-    const pauseSelBtn = document.createElement('button');
-    pauseSelBtn.className = 'habit-modal-pause-btn';
-    pauseSelBtn.textContent = isSelPaused ? `Resume ${selDayName}` : `Pause ${selDayName}`;
-    pauseSelBtn.addEventListener('click', () => {
-      const h = habitsData.habits.find(x => x.id === _habitModalId);
-      if (!h) return;
-      if (isPausedOn(h, selISO)) {
-        h.pausedDays = h.pausedDays.filter(d => d !== selISO);
-      } else {
-        if (!Array.isArray(h.pausedDays)) h.pausedDays = [];
-        h.pausedDays.push(selISO);
-      }
-      h.streak = calcHabitStreak(h);
-      if (h.streak > (h.bestStreak || 0)) h.bestStreak = h.streak;
-      saveHabits();
-      renderHabitsGrid();
-      updateHabitsScore();
-      renderHabitModalBody(body, h);
-    });
-    body.appendChild(pauseSelBtn);
   }
-}
-
-function toggleHabitDayForWeek(id, weekKey, dayIdx) {
-  const habit = habitsData.habits.find(h => h.id === id);
-  if (!habit) return;
-  if (habit.weekdaysOnly && dayIdx >= 5) return;
-
-  if (!habit.weeklyChecks[weekKey]) {
-    habit.weeklyChecks[weekKey] = Array(7).fill(false);
-  }
-  habit.weeklyChecks[weekKey][dayIdx] = !habit.weeklyChecks[weekKey][dayIdx];
-
-  habit.streak = calcHabitStreak(habit);
-  if (habit.streak > (habit.bestStreak || 0)) habit.bestStreak = habit.streak;
-
-  saveHabits();
-  renderHabitsGrid();
-  updateHabitsScore();
 }
 
 function toggleHabitDay(id, dayIdx) {
