@@ -68,8 +68,8 @@ body {
 .sidebar {
   width: var(--sidebar-w);
   flex-shrink: 0;
-  background: #0f0f0f;
-  border-right: 1px solid rgba(255,255,255,0.04);
+  background: #FFFFFF;
+  border-right: 1px solid #EDE7DE;
   display: flex;
   flex-direction: column;
   height: 100vh;
@@ -84,6 +84,10 @@ body {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  /* Base page shell — same warm cream used behind the Habits cards (#FAF6EF).
+     Home overlays its own background photo; Habits sets its own container bg,
+     so neither is affected by this base color. */
+  background: #FAF6EF;
   transition: margin-left 0.25s ease;
 }
 
@@ -100,7 +104,7 @@ body {
   font-size: 15px;
   font-weight: 700;
   letter-spacing: 0.01em;
-  color: var(--text-primary);
+  color: #2E2A26;
 }
 
 .nav-list {
@@ -125,18 +129,18 @@ body {
 .nav-link svg { opacity: 0.7; transition: opacity 0.15s; }
 
 .nav-link:hover {
-  color: #888;
-  background: rgba(255,255,255,0.04);
+  color: #2E2A26;
+  background: rgba(0,0,0,0.04);
 }
 .nav-link:hover svg { opacity: 1; }
 
 .nav-link.active {
-  color: var(--text-primary);
-  background: rgba(255,255,255,0.07);
-  border-left: 2px solid var(--accent-color);
+  color: #D85A30;
+  background: rgba(216, 90, 48, 0.09);   /* pale coral tint */
+  border-left: 2px solid #D85A30;
   padding-left: 10px;
 }
-.nav-link.active svg { opacity: 1; }
+.nav-link.active svg { opacity: 1; color: #D85A30; }
 
 /* Sidebar bottom */
 .sidebar-bottom {
@@ -149,7 +153,7 @@ body {
 
 .reminders-section {
   padding: 12px 16px 8px;
-  border-top: 1px solid rgba(255,255,255,0.04);
+  border-top: 1px solid #EDE7DE;
   max-height: 200px;
   display: flex;
   flex-direction: column;
@@ -190,7 +194,7 @@ body {
 }
 .reminders-list::-webkit-scrollbar { width: 2px; }
 .reminders-list::-webkit-scrollbar-track { background: transparent; }
-.reminders-list::-webkit-scrollbar-thumb { background: #242424; border-radius: 2px; }
+.reminders-list::-webkit-scrollbar-thumb { background: #E2DACD; border-radius: 2px; }
 
 .reminders-empty {
   font-size: 11px;
@@ -2300,9 +2304,9 @@ body.is-block-dragging * {
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  background: #161616;
-  border: 1px solid #252525;
-  color: #555;
+  background: #FFFFFF;
+  border: 1px solid #EDE7DE;
+  color: #8A7F72;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -3157,15 +3161,15 @@ body.is-wk-incol-dragging * { cursor: grabbing !important; }
   left: calc(var(--sidebar-w) + 8px);
   width: 28px;
   height: 28px;
-  background: #1a1a1a;
-  border: 1px solid #2a2a2a;
+  background: #FFFFFF;
+  border: 1px solid #EDE7DE;
   border-radius: 6px;
   z-index: 1000;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #888;
+  color: #8A7F72;
   padding: 0;
   transition: left 0.25s ease, border-color 0.15s;
 }
