@@ -4671,6 +4671,9 @@ body.is-wk-incol-dragging * { cursor: grabbing !important; }
   object-fit: cover;
   display: block;
 }
+.book-cover-dropzone-error {
+  color: #D85A30;
+}
 
 /* ── Auth gate (login screen) ───────────────────────────────────────────────── */
 /* Until Firebase resolves the auth state (body.auth-ready), BOTH the app and the

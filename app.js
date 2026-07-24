@@ -5104,10 +5104,30 @@ function renderBookDetail(idx) {
 // Shared book-cover "upload": there is no server — a cover is a base64 data URL
 // stored in book.coverDataUrl. Both the existing card tap-to-upload and the new
 // Add-form drop zone read a File through this single path (no parallel system).
-function readCoverImageFile(file, onLoad) {
-  if (!file || !file.type || !file.type.startsWith('image/')) return;
+//
+// A file passing the `image/*` MIME check is NOT enough: on macOS a dragged
+// cover is frequently HEIC (or another format this browser can't render), which
+// FileReader will happily turn into a valid data URL that then fails to decode
+// in an <img> — saved as a "broken" cover (black box + broken-image icon). So we
+// probe-decode the data URL and only hand back covers the browser can actually
+// display; undecodable files are rejected via onError instead of being stored.
+function readCoverImageFile(file, onLoad, onError) {
+  const fail = msg => { if (onError) onError(msg); };
+  if (!file) { fail('No file was provided.'); return; }
+  if (!file.type || !file.type.startsWith('image/')) {
+    fail('That file isn’t an image. Please choose a JPG, PNG, GIF or WebP.');
+    return;
+  }
   const reader = new FileReader();
-  reader.onload = e => onLoad(e.target.result);
+  reader.onerror = () => fail('Could not read that file. Please try again.');
+  reader.onload = e => {
+    const dataUrl = e.target.result;
+    // Confirm the browser can actually render it before accepting.
+    const probe = new Image();
+    probe.onload  = () => onLoad(dataUrl);
+    probe.onerror = () => fail('This image format can’t be displayed here (HEIC images aren’t supported). Please use a JPG or PNG.');
+    probe.src = dataUrl;
+  };
   reader.readAsDataURL(file);
 }
 
@@ -5303,8 +5323,20 @@ function showAddBookForm(card) {
     dropzone.appendChild(coverFileInput);
   };
 
+  // Reset the drop zone to its prompt and surface why a file was rejected, so an
+  // undecodable cover never gets silently accepted (or silently dropped).
+  const showCoverError = msg => {
+    pendingCover = null;
+    dropzone.innerHTML = '';
+    const p = document.createElement('div');
+    p.className = 'book-cover-dropzone-prompt book-cover-dropzone-error';
+    p.textContent = msg;
+    dropzone.appendChild(p);
+    dropzone.appendChild(coverFileInput);
+  };
+
   coverFileInput.addEventListener('change', () => {
-    readCoverImageFile(coverFileInput.files[0], showCoverPreview);
+    readCoverImageFile(coverFileInput.files[0], showCoverPreview, showCoverError);
   });
   dropzone.addEventListener('click', () => coverFileInput.click());
   dropzone.addEventListener('dragover', e => {
@@ -5318,7 +5350,7 @@ function showAddBookForm(card) {
     e.preventDefault();
     dropzone.classList.remove('book-cover-dropzone--over');
     const file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
-    readCoverImageFile(file, showCoverPreview);
+    readCoverImageFile(file, showCoverPreview, showCoverError);
   });
 
   coverGroup.appendChild(coverLabel);
