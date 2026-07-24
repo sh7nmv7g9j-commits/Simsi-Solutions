@@ -4587,6 +4587,54 @@ body.is-wk-incol-dragging * { cursor: grabbing !important; }
   color: #d0d0d0;
 }
 
+/* ── Book library: delete + add ── */
+
+.book-delete-btn:hover {
+  border-color: rgba(224,92,92,0.5);
+  color: #e05c5c;
+}
+.book-delete-btn--armed,
+.book-delete-btn--armed:hover {
+  border-color: rgba(224,92,92,0.6);
+  color: #e05c5c;
+}
+
+.book-add-tile {
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  min-height: 200px;
+  border-radius: 10px;
+  border: 1px dashed #2e2e2e;
+  background: none;
+  color: #3a3a3a;
+  font-size: 30px;
+  font-family: inherit;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.15s, color 0.15s;
+}
+.book-add-tile:hover {
+  border-color: rgba(155,114,207,0.4);
+  color: #9B72CF;
+}
+
+.book-add-form {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+}
+.book-add-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+.book-add-cancel {
+  color: #555;
+}
+
 /* ── Auth gate (login screen) ───────────────────────────────────────────────── */
 /* Until Firebase resolves the auth state (body.auth-ready), BOTH the app and the
    gate stay hidden so nothing flashes on reload. Then exactly one is revealed:

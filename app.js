@@ -4252,7 +4252,7 @@ function renderGoalsGrid() {
       bar.className = 'goal-progress-bar-wrap';
       const fill = document.createElement('div');
       fill.className = 'goal-progress-bar-fill';
-      fill.style.width = `${goal.target > 0 ? (goal.current / goal.target) * 100 : 0}%`;
+      fill.style.width = `${goal.target > 0 ? Math.min(100, (goal.current / goal.target) * 100) : 0}%`;
       bar.appendChild(fill);
       progress.appendChild(fraction);
       progress.appendChild(bar);
@@ -5178,8 +5178,144 @@ function renderBookLibrary() {
     moreBtn.addEventListener('click', () => navigateToBookDetail(idx));
     card.appendChild(moreBtn);
 
+    const delBtn = document.createElement('button');
+    delBtn.className = 'book-more-btn book-delete-btn';
+    delBtn.textContent = 'Delete';
+    let delArmed = false;
+    let delTimer = null;
+    delBtn.addEventListener('click', () => {
+      if (!delArmed) {
+        delArmed = true;
+        delBtn.textContent = 'Confirm delete?';
+        delBtn.classList.add('book-delete-btn--armed');
+        delTimer = setTimeout(() => {
+          delArmed = false;
+          delBtn.textContent = 'Delete';
+          delBtn.classList.remove('book-delete-btn--armed');
+        }, 3000);
+        return;
+      }
+      if (delTimer) clearTimeout(delTimer);
+      const g = goalsData.find(x => x.id === 'goal-reading');
+      if (!g || !Array.isArray(g.books)) return;
+      g.books.splice(idx, 1);
+      g.current = g.books.filter(b => b.totalPages > 0 && b.currentPage >= b.totalPages).length;
+      saveGoals();
+      renderGoalsGrid();
+      renderBookLibrary();
+    });
+    card.appendChild(delBtn);
+
     grid.appendChild(card);
   });
+
+  renderAddBookCard(grid);
+}
+
+// Appends the "＋ Add Book" tile (and its inline create form) to the library grid.
+function renderAddBookCard(grid) {
+  const card = document.createElement('div');
+  card.className = 'book-thumb-card book-add-card';
+
+  const tile = document.createElement('button');
+  tile.className = 'book-add-tile';
+  tile.textContent = '＋';
+
+  const label = document.createElement('div');
+  label.className = 'book-thumb-untitled';
+  label.textContent = 'Add Book';
+
+  card.appendChild(tile);
+  card.appendChild(label);
+
+  tile.addEventListener('click', () => showAddBookForm(card));
+
+  grid.appendChild(card);
+}
+
+// Swaps the add-card contents for an inline create form. A new book record is
+// only pushed on Save, so cancelling never leaves an orphan/blank entry.
+function showAddBookForm(card) {
+  card.innerHTML = '';
+
+  const form = document.createElement('div');
+  form.className = 'book-add-form';
+
+  const makeField = (labelText, type, placeholder, opts = {}) => {
+    const group = document.createElement('div');
+    group.className = 'field-group';
+    const lbl = document.createElement('label');
+    lbl.className = 'field-label';
+    lbl.textContent = labelText;
+    const input = document.createElement('input');
+    input.className = 'field-input';
+    input.type = type;
+    input.placeholder = placeholder;
+    input.autocomplete = 'off';
+    if (opts.min != null) input.min = opts.min;
+    group.appendChild(lbl);
+    group.appendChild(input);
+    form.appendChild(group);
+    return input;
+  };
+
+  const titleInput = makeField('Book Title', 'text', 'e.g. Atomic Habits');
+  const coverInput = makeField('Cover Image URL', 'url', 'https://…');
+  const pagesInput = makeField('Total Pages', 'number', 'e.g. 320', { min: '1' });
+  const curInput   = makeField('Current Page', 'number', '0', { min: '0' });
+
+  const actions = document.createElement('div');
+  actions.className = 'book-add-actions';
+
+  const saveBtn = document.createElement('button');
+  saveBtn.className = 'book-setup-save-btn';
+  saveBtn.textContent = 'Add Book';
+
+  const cancelBtn = document.createElement('button');
+  cancelBtn.className = 'book-setup-save-btn book-add-cancel';
+  cancelBtn.textContent = 'Cancel';
+
+  const doSave = () => {
+    const title = titleInput.value.trim();
+    if (!title) {
+      titleInput.style.borderColor = 'rgba(239,68,68,0.7)';
+      return;
+    }
+    const g = goalsData.find(x => x.id === 'goal-reading');
+    if (!g) return;
+    if (!Array.isArray(g.books)) g.books = [];
+
+    const totalParsed = parseInt(pagesInput.value, 10);
+    const totalPages  = Number.isFinite(totalParsed) && totalParsed > 0 ? totalParsed : null;
+    const curParsed   = parseInt(curInput.value, 10);
+    let currentPage   = Number.isFinite(curParsed) && curParsed > 0 ? curParsed : 0;
+    if (totalPages) currentPage = Math.min(currentPage, totalPages);
+
+    g.books.push({
+      id:           `book-${uid()}`,
+      title,
+      author:       null,
+      totalPages,
+      currentPage,
+      coverDataUrl: coverInput.value.trim() || null,
+      journal:      [],
+    });
+    g.current = g.books.filter(b => b.totalPages > 0 && b.currentPage >= b.totalPages).length;
+    saveGoals();
+    renderGoalsGrid();
+    renderBookLibrary();
+  };
+
+  saveBtn.addEventListener('click', doSave);
+  cancelBtn.addEventListener('click', renderBookLibrary);
+  curInput.addEventListener('keydown', e => { if (e.key === 'Enter') doSave(); });
+
+  actions.appendChild(saveBtn);
+  actions.appendChild(cancelBtn);
+  form.appendChild(actions);
+  card.appendChild(form);
+
+  setTimeout(() => titleInput.focus(), 40);
 }
 
   function confirmEditGoal(goalId) {
