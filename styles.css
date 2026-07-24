@@ -4639,6 +4639,39 @@ body.is-wk-incol-dragging * { cursor: grabbing !important; }
   color: #555;
 }
 
+.book-cover-dropzone {
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  min-height: 160px;
+  border-radius: 10px;
+  border: 1px dashed #2e2e2e;
+  background: #1a1a1a;
+  cursor: pointer;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.15s;
+}
+.book-cover-dropzone:hover,
+.book-cover-dropzone--over {
+  border-color: rgba(155,114,207,0.55);
+}
+.book-cover-dropzone-prompt {
+  font-size: 11px;
+  color: #484848;
+  text-align: center;
+  padding: 0 12px;
+  pointer-events: none;
+}
+.book-cover-dropzone-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
 /* ── Auth gate (login screen) ───────────────────────────────────────────────── */
 /* Until Firebase resolves the auth state (body.auth-ready), BOTH the app and the
    gate stay hidden so nothing flashes on reload. Then exactly one is revealed:

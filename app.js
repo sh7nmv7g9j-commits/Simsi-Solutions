@@ -5101,6 +5101,16 @@ function renderBookDetail(idx) {
     });
   }
 
+// Shared book-cover "upload": there is no server — a cover is a base64 data URL
+// stored in book.coverDataUrl. Both the existing card tap-to-upload and the new
+// Add-form drop zone read a File through this single path (no parallel system).
+function readCoverImageFile(file, onLoad) {
+  if (!file || !file.type || !file.type.startsWith('image/')) return;
+  const reader = new FileReader();
+  reader.onload = e => onLoad(e.target.result);
+  reader.readAsDataURL(file);
+}
+
 function renderBookLibrary() {
   const grid = document.getElementById('bookLibraryGrid');
   if (!grid) return;
@@ -5133,17 +5143,13 @@ function renderBookLibrary() {
     fileInput.accept = 'image/*';
     fileInput.style.display = 'none';
     fileInput.addEventListener('change', () => {
-      const file = fileInput.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = e => {
+      readCoverImageFile(fileInput.files[0], dataUrl => {
         const g = goalsData.find(x => x.id === 'goal-reading');
         if (!g) return;
-        g.books[idx].coverDataUrl = e.target.result;
+        g.books[idx].coverDataUrl = dataUrl;
         saveGoals();
         renderBookLibrary();
-      };
-      reader.readAsDataURL(file);
+      });
     });
     coverWrap.appendChild(fileInput);
 
@@ -5260,7 +5266,65 @@ function showAddBookForm(card) {
   };
 
   const titleInput = makeField('Book Title', 'text', 'e.g. Atomic Habits');
-  const coverInput = makeField('Cover Image URL', 'url', 'https://…');
+
+  // Cover: drag-and-drop image with click-to-browse fallback. Reuses the same
+  // File -> data URL path as the existing card upload (readCoverImageFile). The
+  // book record does not exist yet, so the data URL is held here and written
+  // into coverDataUrl on Save.
+  let pendingCover = null;
+
+  const coverGroup = document.createElement('div');
+  coverGroup.className = 'field-group';
+  const coverLabel = document.createElement('label');
+  coverLabel.className = 'field-label';
+  coverLabel.textContent = 'Cover Image';
+
+  const dropzone = document.createElement('div');
+  dropzone.className = 'book-cover-dropzone';
+
+  const dzPrompt = document.createElement('div');
+  dzPrompt.className = 'book-cover-dropzone-prompt';
+  dzPrompt.textContent = 'Drag image here or click to browse';
+  dropzone.appendChild(dzPrompt);
+
+  const coverFileInput = document.createElement('input');
+  coverFileInput.type = 'file';
+  coverFileInput.accept = 'image/*';
+  coverFileInput.style.display = 'none';
+  dropzone.appendChild(coverFileInput);
+
+  const showCoverPreview = dataUrl => {
+    pendingCover = dataUrl;
+    dropzone.innerHTML = '';
+    const img = document.createElement('img');
+    img.className = 'book-cover-dropzone-img';
+    img.src = dataUrl;
+    dropzone.appendChild(img);
+    dropzone.appendChild(coverFileInput);
+  };
+
+  coverFileInput.addEventListener('change', () => {
+    readCoverImageFile(coverFileInput.files[0], showCoverPreview);
+  });
+  dropzone.addEventListener('click', () => coverFileInput.click());
+  dropzone.addEventListener('dragover', e => {
+    e.preventDefault();
+    dropzone.classList.add('book-cover-dropzone--over');
+  });
+  dropzone.addEventListener('dragleave', () => {
+    dropzone.classList.remove('book-cover-dropzone--over');
+  });
+  dropzone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropzone.classList.remove('book-cover-dropzone--over');
+    const file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+    readCoverImageFile(file, showCoverPreview);
+  });
+
+  coverGroup.appendChild(coverLabel);
+  coverGroup.appendChild(dropzone);
+  form.appendChild(coverGroup);
+
   const pagesInput = makeField('Total Pages', 'number', 'e.g. 320', { min: '1' });
   const curInput   = makeField('Current Page', 'number', '0', { min: '0' });
 
@@ -5297,7 +5361,7 @@ function showAddBookForm(card) {
       author:       null,
       totalPages,
       currentPage,
-      coverDataUrl: coverInput.value.trim() || null,
+      coverDataUrl: pendingCover || null,
       journal:      [],
     });
     g.current = g.books.filter(b => b.totalPages > 0 && b.currentPage >= b.totalPages).length;
