@@ -3255,9 +3255,12 @@ body.is-wk-incol-dragging * { cursor: grabbing !important; }
 
 .goal-card {
   position: relative;
-  background: #1a1a1a;
-  border: 1px solid #252525;
+  /* Cream/coral card: white surface on the cream page, matching the Habits
+     card system (same soft warm shadow + hairline border). */
+  background: #FFFFFF;
+  border: 1px solid #EDE7DE;
   border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(70, 45, 20, 0.07);
   padding: 24px 22px 20px;
   display: flex;
   flex-direction: column;
@@ -3268,14 +3271,14 @@ body.is-wk-incol-dragging * { cursor: grabbing !important; }
 }
 
 .goal-card:hover {
-  border-color: rgba(155,114,207,0.28);
+  border-color: rgba(216, 90, 48, 0.28);   /* coral, was purple */
 }
 
 .goal-card-meta {
   font-size: 9px;
   font-weight: 600;
   letter-spacing: 0.13em;
-  color: #404040;
+  color: #A99E8E;
   margin-bottom: 4px;
 }
 
@@ -3283,14 +3286,14 @@ body.is-wk-incol-dragging * { cursor: grabbing !important; }
   font-family: 'CormorantGaramond', serif;
   font-size: 28px;
   font-weight: 300;
-  color: #f0f0f0;
+  color: #2A2622;
   line-height: 1.15;
   letter-spacing: -0.01em;
 }
 
 .goal-card-date {
   font-size: 11px;
-  color: #404040;
+  color: #A99E8E;
   margin-top: 2px;
 }
 
@@ -3304,13 +3307,13 @@ body.is-wk-incol-dragging * { cursor: grabbing !important; }
 
 .goal-progress-fraction {
   font-size: 12px;
-  color: #555;
+  color: #6B6155;
   font-variant-numeric: tabular-nums;
 }
 
 .goal-progress-bar-wrap {
   height: 2px;
-  background: #252525;
+  background: #E8E3DB;   /* light warm track (was dark #252525) */
   border-radius: 2px;
   overflow: hidden;
 }
