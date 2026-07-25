@@ -3358,26 +3358,26 @@ body.is-wk-incol-dragging * { cursor: grabbing !important; }
 .new-goal-type-btn {
   padding: 5px 12px;
   border-radius: 8px;
-  border: 1px solid #2a2a2a;
-  background: #111;
-  color: #555;
+  border: 1px solid #EDE7DE;
+  background: #FAF6EF;
+  color: #6B6155;
   font-size: 12px;
   font-weight: 500;
   font-family: inherit;
   cursor: pointer;
   transition: all 0.12s;
 }
-.new-goal-type-btn:hover { border-color: rgba(155,114,207,0.4); color: #888; }
+.new-goal-type-btn:hover { border-color: rgba(216,90,48,0.4); color: #888; }
 .new-goal-type-btn--active {
-  background: rgba(155,114,207,0.15);
-  border-color: rgba(155,114,207,0.5);
-  color: var(--accent-color);
+  background: rgba(216,90,48,0.12);
+  border-color: rgba(216,90,48,0.5);
+  color: #D85A30;
 }
 
 .goal-modal-streak-display {
   font-size: 22px;
   font-weight: 700;
-  color: #f0f0f0;
+  color: #2A2622;
   font-variant-numeric: tabular-nums;
 }
 
@@ -3387,7 +3387,7 @@ body.is-wk-incol-dragging * { cursor: grabbing !important; }
   right: 32px;
   background: none;
   border: none;
-  color: #555;
+  color: #A99E8E;
   font-size: 13px;
   line-height: 1;
   cursor: pointer;
@@ -3397,7 +3397,7 @@ body.is-wk-incol-dragging * { cursor: grabbing !important; }
   transition: opacity 0.12s, color 0.12s;
 }
 .goal-card:hover .goal-card-edit { opacity: 1; }
-.goal-card-edit:hover { color: var(--accent-color); }
+.goal-card-edit:hover { color: #D85A30; }
 
 .goal-card-del {
   position: absolute;
@@ -3405,7 +3405,7 @@ body.is-wk-incol-dragging * { cursor: grabbing !important; }
   right: 10px;
   background: none;
   border: none;
-  color: #555;
+  color: #A99E8E;
   font-size: 16px;
   line-height: 1;
   cursor: pointer;
@@ -3420,7 +3420,8 @@ body.is-wk-incol-dragging * { cursor: grabbing !important; }
 .goal-card-confirm {
   position: absolute;
   inset: 0;
-  background: #1a1a1a;
+  background: #FFFFFF;
+  border: 1px solid #EDE7DE;
   border-radius: 16px;
   display: flex;
   flex-direction: column;
@@ -3452,7 +3453,7 @@ body.is-wk-incol-dragging * { cursor: grabbing !important; }
   transition: color 0.12s;
 }
 .goal-confirm-yes { color: #e05c5c; }
-.goal-confirm-no  { color: #555; }
+.goal-confirm-no  { color: #6B6155; }
 .goal-confirm-yes:hover { color: #ff7070; }
 .goal-confirm-no:hover  { color: #888; }
 
