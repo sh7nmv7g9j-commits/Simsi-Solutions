@@ -13,14 +13,18 @@
 }
 
 :root {
-  --bg: #0f0f0f;
-  --surface: #141414;
-  --surface2: #1a1a1a;
-  --border: #222;
-  --accent: #6c63ff;
-  --text-primary: #e8e8e8;
-  --text-secondary: #3a3a3a;
-  --text-muted: #2a2a2a;
+  /* Cream/coral design system — single source of truth for the global theme.
+     Individual screens (sidebar, habits, main shell) already hardcode these
+     same hexes; these tokens migrate every remaining token-driven surface
+     (body, modals, forms, auth) off the old dark theme in one place. */
+  --bg: #FAF6EF;            /* warm cream page base (matches .main) */
+  --surface: #FFFFFF;       /* raised cards/modals (matches sidebar + habit cards) */
+  --surface2: #F3ECE1;      /* warm inset, sits between bg and white */
+  --border: #EDE7DE;        /* soft warm hairline (matches sidebar border) */
+  --accent: #D85A30;        /* coral — established phase accent (was purple) */
+  --text-primary: #2A2622;  /* primary charcoal (as used on Habits) */
+  --text-secondary: #6B6155; /* secondary warm gray */
+  --text-muted: #A99E8E;    /* muted warm gray */
 
   /* Category palette */
   --routine:  #F4A535;
@@ -569,7 +573,10 @@ body {
   background: rgba(255,255,255,0.04);
   border: 1px solid rgba(255,255,255,0.08);
   border-radius: 7px;
-  color: var(--text-primary);
+  /* Re-pinned light: this input lives in the still-dark Library popover, so it
+     must NOT follow --text-primary (now charcoal) or it'd be invisible here.
+     Revisit when the Schedule/Library dark popovers get their own restyle. */
+  color: #e8e8e8;
   font-size: 12px;
   padding: 6px 8px;
   outline: none;
