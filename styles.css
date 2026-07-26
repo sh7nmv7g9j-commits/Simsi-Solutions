@@ -3320,7 +3320,9 @@ body.is-wk-incol-dragging * { cursor: grabbing !important; }
 
 .goal-progress-bar-fill {
   height: 100%;
-  background: var(--accent-color);
+  /* Coral brand — progress fills are intentionally NOT tied to the
+     user-configurable accent, so progress reads coral everywhere. */
+  background: #D85A30;
   border-radius: 2px;
   transition: width 0.3s ease;
 }
@@ -3484,7 +3486,7 @@ body.is-wk-incol-dragging * { cursor: grabbing !important; }
 }
 .goal-modal-bar-fill {
   height: 100%;
-  background: var(--accent-color);
+  background: #D85A30;   /* coral brand, independent of accent setting */
   border-radius: 2px;
   transition: width 0.3s ease;
 }
@@ -4267,7 +4269,7 @@ body.is-wk-incol-dragging * { cursor: grabbing !important; }
 
 .book-detail-bar-wrap {
   height: 2px;
-  background: #252525;
+  background: #E8E3DB;   /* light warm track (was dark #252525) */
   border-radius: 2px;
   overflow: hidden;
   width: 100%;
@@ -4275,7 +4277,7 @@ body.is-wk-incol-dragging * { cursor: grabbing !important; }
 
 .book-detail-bar-fill {
   height: 100%;
-  background: var(--accent-color);
+  background: #D85A30;   /* coral brand, independent of accent setting */
   border-radius: 2px;
   transition: width 0.3s ease;
 }
