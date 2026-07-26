@@ -284,7 +284,7 @@ body {
   flex-shrink: 0;
   padding: 0;
   height: 52px;
-  border-bottom: 1px solid rgba(255,255,255,0.05);
+  border-bottom: 1px solid #EDE7DE;
   position: relative;
   z-index: 10;
 }
@@ -302,9 +302,9 @@ body {
   width: 32px;
   height: 32px;
   border-radius: 8px;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.06);
-  color: #3a3a3a;
+  background: rgba(0,0,0,0.03);
+  border: 1px solid #EDE7DE;
+  color: #A99E8E;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -314,15 +314,15 @@ body {
 }
 
 .panel-toggle-btn:hover {
-  background: rgba(255,255,255,0.08);
-  border-color: rgba(255,255,255,0.11);
-  color: #666;
+  background: rgba(0,0,0,0.05);
+  border-color: #E0D8CC;
+  color: #6B6155;
 }
 
 .panel-toggle-btn.panel-toggle--active {
-  background: rgba(108,99,255,0.18);
-  border-color: rgba(108,99,255,0.35);
-  color: #9b94ff;
+  background: rgba(216,90,48,0.12);
+  border-color: rgba(216,90,48,0.35);
+  color: #D85A30;
 }
 
 /* ── Day navigation ── */
@@ -340,8 +340,8 @@ body {
   height: 32px;
   border-radius: 8px;
   background: none;
-  border: 1px solid rgba(255,255,255,0.06);
-  color: #3a3a3a;
+  border: 1px solid #EDE7DE;
+  color: #A99E8E;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -351,15 +351,15 @@ body {
 }
 
 .day-nav-btn:hover {
-  background: rgba(255,255,255,0.07);
-  border-color: rgba(255,255,255,0.11);
-  color: #777;
+  background: rgba(0,0,0,0.04);
+  border-color: #E0D8CC;
+  color: #6B6155;
 }
 
 .day-nav-title {
   font-size: 13px;
   font-weight: 500;
-  color: #c8c8c8;
+  color: #2A2622;
   letter-spacing: 0.01em;
   white-space: nowrap;
   min-width: 200px;
@@ -382,9 +382,9 @@ body {
   width: 20px;
   height: 20px;
   border-radius: 5px;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.07);
-  color: #484848;
+  background: rgba(0,0,0,0.03);
+  border: 1px solid #EDE7DE;
+  color: #A99E8E;
   font-size: 13px;
   line-height: 1;
   cursor: pointer;
@@ -398,17 +398,17 @@ body {
 }
 
 .zoom-btn:hover:not(:disabled) {
-  background: rgba(255,255,255,0.09);
-  border-color: rgba(255,255,255,0.13);
-  color: #777;
+  background: rgba(0,0,0,0.05);
+  border-color: #E0D8CC;
+  color: #6B6155;
 }
-.zoom-btn:active:not(:disabled) { background: rgba(255,255,255,0.13); }
+.zoom-btn:active:not(:disabled) { background: rgba(0,0,0,0.07); }
 .zoom-btn:disabled { opacity: 0.22; cursor: default; }
 
 .zoom-label {
   font-size: 9px;
   font-weight: 500;
-  color: #4a4a4a;
+  color: #A99E8E;
   letter-spacing: 0.05em;
   min-width: 34px;
   text-align: center;
@@ -420,10 +420,10 @@ body {
 .floating-panel {
   position: absolute;
   z-index: 90;
-  background: #161616;
-  border: 1px solid rgba(255,255,255,0.07);
+  background: #FFFFFF;
+  border: 1px solid #EDE7DE;
   border-radius: 14px;
-  box-shadow: 0 12px 40px rgba(0,0,0,0.65), 0 2px 8px rgba(0,0,0,0.4);
+  box-shadow: 0 12px 40px rgba(70, 45, 20, 0.18), 0 2px 8px rgba(70, 45, 20, 0.10);
   top: 46px;
 }
 
@@ -448,7 +448,7 @@ body {
 
 .floating-panel--library::-webkit-scrollbar { width: 2px; }
 .floating-panel--library::-webkit-scrollbar-track { background: transparent; }
-.floating-panel--library::-webkit-scrollbar-thumb { background: #242424; border-radius: 2px; }
+.floating-panel--library::-webkit-scrollbar-thumb { background: #D8CFC2; border-radius: 2px; }
 
 /* Year calendar panel — top-right */
 .floating-panel--year {
@@ -461,7 +461,7 @@ body {
 
 .floating-panel--year::-webkit-scrollbar { width: 3px; }
 .floating-panel--year::-webkit-scrollbar-track { background: transparent; }
-.floating-panel--year::-webkit-scrollbar-thumb { background: #242424; border-radius: 2px; }
+.floating-panel--year::-webkit-scrollbar-thumb { background: #D8CFC2; border-radius: 2px; }
 
 /* ── Activity chips (used inside floating library panel) ── */
 
@@ -511,18 +511,18 @@ body {
   transition: background 0.1s;
 }
 .lib-group-header--spaced { margin-top: 8px; }
-.lib-group-header:hover { background: rgba(255,255,255,0.04); }
+.lib-group-header:hover { background: rgba(0,0,0,0.03); }
 
 .lib-group-label {
   font-size: 8.5px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.13em;
-  color: #3a3a3a;
+  color: #8A7F72;
 }
 
 .lib-group-chevron {
-  color: #2e2e2e;
+  color: #A99E8E;
   flex-shrink: 0;
   transition: transform 0.18s ease;
 }
@@ -547,9 +547,9 @@ body {
   margin-top: 10px;
   padding: 6px 8px;
   border-radius: 8px;
-  border: 1px dashed rgba(255,255,255,0.07);
+  border: 1px dashed #EDE7DE;
   background: none;
-  color: #2e2e2e;
+  color: #A99E8E;
   font-size: 11px;
   font-weight: 500;
   cursor: pointer;
@@ -557,9 +557,9 @@ body {
   transition: border-color 0.12s, color 0.12s, background 0.12s;
 }
 .lib-add-btn:hover {
-  border-color: rgba(255,255,255,0.13);
-  color: #555;
-  background: rgba(255,255,255,0.025);
+  border-color: #E0D8CC;
+  color: #6B6155;
+  background: rgba(0,0,0,0.03);
 }
 
 .lib-add-form {
@@ -570,20 +570,17 @@ body {
 .lib-add-form-input {
   display: block;
   width: 100%;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.08);
+  background: #FFFFFF;
+  border: 1px solid #EDE7DE;
   border-radius: 7px;
-  /* Re-pinned light: this input lives in the still-dark Library popover, so it
-     must NOT follow --text-primary (now charcoal) or it'd be invisible here.
-     Revisit when the Schedule/Library dark popovers get their own restyle. */
-  color: #e8e8e8;
+  color: #2A2622;
   font-size: 12px;
   padding: 6px 8px;
   outline: none;
   margin-bottom: 8px;
   transition: border-color 0.12s;
 }
-.lib-add-form-input:focus { border-color: rgba(108,99,255,0.4); }
+.lib-add-form-input:focus { border-color: rgba(216,90,48,0.4); }
 
 .lib-add-swatches {
   display: flex;
@@ -605,7 +602,7 @@ body {
   transition: border-color 0.12s, transform 0.12s;
 }
 .lib-add-swatch:hover { transform: scale(1.2); }
-.lib-add-swatch.selected { border-color: rgba(255,255,255,0.75); transform: scale(1.1); }
+.lib-add-swatch.selected { border-color: #2A2622; transform: scale(1.1); }
 
 .lib-add-actions {
   display: flex;
@@ -624,18 +621,20 @@ body {
   border-radius: 5px;
   transition: color 0.12s, background 0.12s;
 }
-.lib-add-save { color: #9b94ff; }
-.lib-add-save:hover { color: #c4bfff; background: rgba(108,99,255,0.1); }
-.lib-add-cancel { color: #3a3a3a; }
-.lib-add-cancel:hover { color: #777; }
+.lib-add-save { color: #D85A30; }
+.lib-add-save:hover { color: #C24E28; background: rgba(216,90,48,0.1); }
+.lib-add-cancel { color: #A99E8E; }
+.lib-add-cancel:hover { color: #6B6155; }
 
+/* Money-owed status chip: neutral warm gray (NOT a category color and NOT the
+   coral action accent) so it reads as a quiet status/meta indicator. */
 .chip-owe {
-  background: rgba(192,132,252,0.08);
-  color: #a78bca;
-  border: 1px dashed rgba(192,132,252,0.22);
+  background: rgba(107,97,85,0.07);
+  color: #6B6155;
+  border: 1px dashed #D8CFC2;
   cursor: pointer;
 }
-.chip-owe:hover { background: rgba(192,132,252,0.14); transform: translateX(3px); filter: none; }
+.chip-owe:hover { background: rgba(107,97,85,0.12); transform: translateX(3px); filter: none; }
 
 /* Chip delete button */
 .chip-del {
@@ -742,7 +741,7 @@ body {
   border-radius: 4px;
 }
 .activity-chip:hover .chip-cat-pill { opacity: 0.65; }
-.chip-cat-pill:hover { opacity: 1 !important; background: rgba(255,255,255,0.07); }
+.chip-cat-pill:hover { opacity: 1 !important; background: rgba(0,0,0,0.05); }
 
 .chip-cat-dot {
   width: 7px;
@@ -756,7 +755,7 @@ body {
 
 .chip-insert-line {
   height: 2px;
-  background: var(--accent-color);
+  background: #D85A30;   /* coral drop indicator (hardcoded, not accent-color) */
   border-radius: 1px;
   flex-shrink: 0;
   pointer-events: none;
@@ -764,13 +763,13 @@ body {
 }
 
 .chip-cat-dropdown {
-  background: #1a1a1a;
-  border: 1px solid #2a2a2a;
+  background: #FFFFFF;
+  border: 1px solid #EDE7DE;
   border-radius: 8px;
   padding: 4px 0;
   z-index: 10000;
   min-width: 148px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.55);
+  box-shadow: 0 4px 20px rgba(70, 45, 20, 0.16);
 }
 
 .chip-cat-dropdown-item {
@@ -780,16 +779,16 @@ body {
   padding: 7px 11px;
   cursor: pointer;
   font-size: 11px;
-  color: #555;
+  color: #6B6155;
   transition: background 0.1s, color 0.1s;
   white-space: nowrap;
 }
-.chip-cat-dropdown-item:hover { background: rgba(255,255,255,0.04); color: #bbb; }
-.chip-cat-dropdown-item--active { color: #e8e8e8; }
+.chip-cat-dropdown-item:hover { background: rgba(0,0,0,0.04); color: #2A2622; }
+.chip-cat-dropdown-item--active { color: #2A2622; }
 
 .library-sep {
   height: 1px;
-  background: rgba(255,255,255,0.04);
+  background: #EDE7DE;
   margin: 7px 0;
 }
 
@@ -807,21 +806,21 @@ body {
   width: 24px;
   height: 24px;
   border-radius: 6px;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.07);
-  color: #555;
+  background: rgba(0,0,0,0.03);
+  border: 1px solid #EDE7DE;
+  color: #6B6155;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: background 0.12s, color 0.12s;
 }
-.year-nav-btn:hover { background: rgba(255,255,255,0.09); color: #999; }
+.year-nav-btn:hover { background: rgba(0,0,0,0.05); color: #2A2622; }
 
 .year-nav-label {
   font-size: 13px;
   font-weight: 600;
-  color: #666;
+  color: #2A2622;
   min-width: 40px;
   text-align: center;
 }
@@ -841,7 +840,7 @@ body {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  color: #484848;
+  color: #8A7F72;
   margin-bottom: 7px;
 }
 
@@ -854,7 +853,7 @@ body {
 .year-week-labels span {
   font-size: 7.5px;
   text-align: center;
-  color: #2e2e2e;
+  color: #A99E8E;
   font-weight: 600;
   letter-spacing: 0.04em;
 }
@@ -871,20 +870,20 @@ body {
   align-items: center;
   justify-content: center;
   font-size: 8.5px;
-  color: #4a4a4a;
+  color: #6B6155;
   border-radius: 4px;
   cursor: pointer;
   transition: background 0.1s, color 0.1s;
   line-height: 1;
 }
 .year-day:hover:not(.year-day--empty) {
-  background: rgba(255,255,255,0.08);
-  color: #aaa;
+  background: rgba(0,0,0,0.05);
+  color: #2A2622;
 }
 .year-day--empty { cursor: default; pointer-events: none; }
 .year-day--today {
-  background: rgba(108,99,255,0.22);
-  color: #9b94ff;
+  background: rgba(216,90,48,0.15);
+  color: #D85A30;
   font-weight: 700;
 }
 .year-day--current {
