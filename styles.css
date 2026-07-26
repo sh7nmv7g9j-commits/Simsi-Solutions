@@ -4058,13 +4058,13 @@ body.is-wk-incol-dragging * { cursor: grabbing !important; }
 
 .book-page-container::-webkit-scrollbar { width: 4px; }
 .book-page-container::-webkit-scrollbar-track { background: transparent; }
-.book-page-container::-webkit-scrollbar-thumb { background: #242424; border-radius: 2px; }
-.book-page-container::-webkit-scrollbar-thumb:hover { background: #323232; }
+.book-page-container::-webkit-scrollbar-thumb { background: #D8CFC2; border-radius: 2px; }
+.book-page-container::-webkit-scrollbar-thumb:hover { background: #C9BEAE; }
 
 .book-back-btn {
   background: none;
   border: none;
-  color: #555;
+  color: #6B6155;
   font-size: 12px;
   font-family: inherit;
   cursor: pointer;
@@ -4077,7 +4077,7 @@ body.is-wk-incol-dragging * { cursor: grabbing !important; }
   position: relative;
   z-index: 2;
 }
-.book-back-btn:hover { color: #f0f0f0; }
+.book-back-btn:hover { color: #2A2622; }
 
 .book-page-title {
   font-size: 18px;
@@ -4111,12 +4111,12 @@ body.is-wk-incol-dragging * { cursor: grabbing !important; }
   overflow: hidden;
   cursor: pointer;
   position: relative;
-  background: #1a1a1a;
-  border: 1px solid #252525;
+  background: #F3ECE1;
+  border: 1px solid #EDE7DE;
   transition: border-color 0.15s;
   flex-shrink: 0;
 }
-.book-cover-wrap:hover { border-color: rgba(155,114,207,0.4); }
+.book-cover-wrap:hover { border-color: rgba(216,90,48,0.4); }
 
 .book-cover-img {
   width: 100%;
@@ -4132,7 +4132,7 @@ body.is-wk-incol-dragging * { cursor: grabbing !important; }
   align-items: center;
   justify-content: center;
   font-size: 28px;
-  color: #2e2e2e;
+  color: #A99E8E;
   font-weight: 300;
 }
 
@@ -4155,13 +4155,13 @@ body.is-wk-incol-dragging * { cursor: grabbing !important; }
 
 .book-thumb-pages {
   font-size: 12px;
-  color: #484848;
+  color: #A99E8E;
   text-align: center;
 }
 
 .book-thumb-untitled {
   font-size: 12px;
-  color: #333;
+  color: #A99E8E;
   text-align: center;
   font-style: italic;
 }
@@ -4180,8 +4180,8 @@ body.is-wk-incol-dragging * { cursor: grabbing !important; }
 
 .book-detail-container::-webkit-scrollbar { width: 4px; }
 .book-detail-container::-webkit-scrollbar-track { background: transparent; }
-.book-detail-container::-webkit-scrollbar-thumb { background: #242424; border-radius: 2px; }
-.book-detail-container::-webkit-scrollbar-thumb:hover { background: #323232; }
+.book-detail-container::-webkit-scrollbar-thumb { background: #D8CFC2; border-radius: 2px; }
+.book-detail-container::-webkit-scrollbar-thumb:hover { background: #C9BEAE; }
 
 .book-detail-layout {
   display: flex;
@@ -4201,8 +4201,8 @@ body.is-wk-incol-dragging * { cursor: grabbing !important; }
   height: 260px;
   border-radius: 10px;
   overflow: hidden;
-  background: #1a1a1a;
-  border: 1px solid #252525;
+  background: #F3ECE1;
+  border: 1px solid #EDE7DE;
   overflow: hidden;
   flex-shrink: 0;
 }
@@ -4221,7 +4221,7 @@ body.is-wk-incol-dragging * { cursor: grabbing !important; }
   align-items: center;
   justify-content: center;
   font-size: 36px;
-  color: #2e2e2e;
+  color: #A99E8E;
 }
 
 .book-detail-right {
@@ -4237,7 +4237,7 @@ body.is-wk-incol-dragging * { cursor: grabbing !important; }
   font-size: 9px;
   font-weight: 600;
   letter-spacing: 0.13em;
-  color: #404040;
+  color: #A99E8E;
   margin-bottom: 4px;
 }
 
@@ -4252,7 +4252,7 @@ body.is-wk-incol-dragging * { cursor: grabbing !important; }
 
 .book-detail-author {
   font-size: 13px;
-  color: #555;
+  color: #6B6155;
   margin-bottom: 20px;
 }
 
@@ -4264,7 +4264,7 @@ body.is-wk-incol-dragging * { cursor: grabbing !important; }
 
 .book-detail-progress-label {
   font-size: 11px;
-  color: #555;
+  color: #6B6155;
   font-variant-numeric: tabular-nums;
 }
 
@@ -4294,8 +4294,8 @@ body.is-wk-incol-dragging * { cursor: grabbing !important; }
   width: 80px;
   background: transparent;
   border: none;
-  border-bottom: 1px solid #2a2a2a;
-  color: #f0f0f0;
+  border-bottom: 1px solid #EDE7DE;
+  color: #2A2622;
   font-size: 13px;
   font-family: inherit;
   padding: 4px 0;
@@ -4303,23 +4303,23 @@ body.is-wk-incol-dragging * { cursor: grabbing !important; }
   transition: border-bottom-color 0.15s;
   font-variant-numeric: tabular-nums;
 }
-.book-detail-page-input:focus { border-bottom-color: var(--accent-color); }
-.book-detail-page-input::placeholder { color: #3a3a3a; }
+.book-detail-page-input:focus { border-bottom-color: #D85A30; }
+.book-detail-page-input::placeholder { color: #A99E8E; }
 
 .book-detail-page-of {
   font-size: 12px;
-  color: #444;
+  color: #8A7F72;
   font-variant-numeric: tabular-nums;
 }
 
 .book-detail-page-hint {
   font-size: 10px;
-  color: #333;
+  color: #A99E8E;
   font-style: italic;
 }
 
 .book-detail-journal-placeholder {
-  border-top: 1px solid #1f1f1f;
+  border-top: 1px solid #EDE7DE;
   padding-top: 28px;
 }
 
@@ -4327,21 +4327,21 @@ body.is-wk-incol-dragging * { cursor: grabbing !important; }
   font-size: 9px;
   font-weight: 600;
   letter-spacing: 0.13em;
-  color: #404040;
+  color: #A99E8E;
   margin-bottom: 12px;
 }
 
 .book-detail-journal-empty {
   font-size: 13px;
-  color: #333;
+  color: #A99E8E;
   font-style: italic;
 }
 
 .book-more-btn {
   background: none;
-  border: 1px solid #252525;
+  border: 1px solid #EDE7DE;
   border-radius: 8px;
-  color: #555;
+  color: #6B6155;
   font-size: 12px;
   font-family: inherit;
   cursor: pointer;
@@ -4350,14 +4350,14 @@ body.is-wk-incol-dragging * { cursor: grabbing !important; }
   width: 100%;
 }
 .book-more-btn:hover {
-  border-color: rgba(155,114,207,0.4);
-  color: #d0d0d0;
+  border-color: rgba(216,90,48,0.4);
+  color: #2A2622;
 }
 
 /* ── Book Journal ── */
 
 .book-detail-journal-section {
-  border-top: 1px solid #1f1f1f;
+  border-top: 1px solid #EDE7DE;
   padding-top: 28px;
   position: relative;
   padding-bottom: 60px;
@@ -4367,13 +4367,13 @@ body.is-wk-incol-dragging * { cursor: grabbing !important; }
   font-size: 9px;
   font-weight: 600;
   letter-spacing: 0.13em;
-  color: #404040;
+  color: #A99E8E;
   margin-bottom: 20px;
 }
 
 .book-journal-new-form {
-  background: #161616;
-  border: 1px solid #252525;
+  background: #FFFFFF;
+  border: 1px solid #EDE7DE;
   border-radius: 12px;
   padding: 16px;
   margin-bottom: 20px;
@@ -4387,8 +4387,8 @@ body.is-wk-incol-dragging * { cursor: grabbing !important; }
 .book-journal-edit-title-input {
   background: transparent;
   border: none;
-  border-bottom: 1px solid #2a2a2a;
-  color: #f0f0f0;
+  border-bottom: 1px solid #EDE7DE;
+  color: #2A2622;
   font-size: 14px;
   font-weight: 600;
   font-family: inherit;
@@ -4398,15 +4398,15 @@ body.is-wk-incol-dragging * { cursor: grabbing !important; }
   transition: border-bottom-color 0.15s;
 }
 .book-journal-entry-title-input:focus,
-.book-journal-edit-title-input:focus { border-bottom-color: var(--accent-color); }
-.book-journal-entry-title-input::placeholder { color: #3a3a3a; }
+.book-journal-edit-title-input:focus { border-bottom-color: #D85A30; }
+.book-journal-entry-title-input::placeholder { color: #A99E8E; }
 
 .book-journal-entry-body-input,
 .book-journal-edit-body-input {
   background: transparent;
   border: none;
-  border-bottom: 1px solid #2a2a2a;
-  color: #d0d0d0;
+  border-bottom: 1px solid #EDE7DE;
+  color: #2A2622;
   font-size: 13px;
   font-family: inherit;
   padding: 6px 0;
@@ -4417,8 +4417,8 @@ body.is-wk-incol-dragging * { cursor: grabbing !important; }
   transition: border-bottom-color 0.15s;
 }
 .book-journal-entry-body-input:focus,
-.book-journal-edit-body-input:focus { border-bottom-color: var(--accent-color); }
-.book-journal-entry-body-input::placeholder { color: #3a3a3a; }
+.book-journal-edit-body-input:focus { border-bottom-color: #D85A30; }
+.book-journal-entry-body-input::placeholder { color: #A99E8E; }
 
 .book-journal-form-actions {
   display: flex;
@@ -4427,7 +4427,7 @@ body.is-wk-incol-dragging * { cursor: grabbing !important; }
 }
 
 .book-journal-save-btn {
-  background: var(--accent-color);
+  background: #D85A30;
   border: none;
   border-radius: 8px;
   color: #fff;
@@ -4443,14 +4443,14 @@ body.is-wk-incol-dragging * { cursor: grabbing !important; }
 .book-journal-cancel-btn {
   background: none;
   border: none;
-  color: #555;
+  color: #6B6155;
   font-size: 12px;
   font-family: inherit;
   padding: 6px 10px;
   cursor: pointer;
   transition: color 0.12s;
 }
-.book-journal-cancel-btn:hover { color: #f0f0f0; }
+.book-journal-cancel-btn:hover { color: #2A2622; }
 
 .book-journal-list {
   display: flex;
@@ -4461,22 +4461,23 @@ body.is-wk-incol-dragging * { cursor: grabbing !important; }
 
 .book-journal-empty {
   font-size: 13px;
-  color: #333;
+  color: #A99E8E;
   font-style: italic;
   margin-bottom: 24px;
 }
 
 .book-journal-entry-card {
-  background: #161616;
-  border: 1px solid #252525;
+  background: #FFFFFF;
+  border: 1px solid #EDE7DE;
   border-radius: 12px;
   padding: 16px 18px;
   display: flex;
   flex-direction: column;
   gap: 10px;
+  box-shadow: 0 1px 3px rgba(70, 45, 20, 0.07);
   transition: border-color 0.15s;
 }
-.book-journal-entry-card:hover { border-color: #2e2e2e; }
+.book-journal-entry-card:hover { border-color: rgba(216,90,48,0.28); }
 
 .book-journal-entry-hd {
   display: flex;
@@ -4488,14 +4489,14 @@ body.is-wk-incol-dragging * { cursor: grabbing !important; }
 .book-journal-entry-title {
   font-size: 14px;
   font-weight: 600;
-  color: #f0f0f0;
+  color: #2A2622;
   flex: 1;
   line-height: 1.3;
 }
 
 .book-journal-entry-date {
   font-size: 10px;
-  color: #404040;
+  color: #A99E8E;
   white-space: nowrap;
   flex-shrink: 0;
   padding-top: 2px;
@@ -4520,14 +4521,14 @@ body.is-wk-incol-dragging * { cursor: grabbing !important; }
   padding: 0 2px;
   transition: color 0.12s;
 }
-.book-journal-entry-edit { color: #555; }
-.book-journal-entry-edit:hover { color: var(--accent-color); }
-.book-journal-entry-del { color: #555; }
+.book-journal-entry-edit { color: #8A7F72; }
+.book-journal-entry-edit:hover { color: #D85A30; }
+.book-journal-entry-del { color: #8A7F72; }
 .book-journal-entry-del:hover { color: #e05c5c; }
 
 .book-journal-entry-body {
   font-size: 13px;
-  color: #888;
+  color: #6B6155;
   line-height: 1.7;
   white-space: pre-wrap;
 }
@@ -4537,7 +4538,7 @@ body.is-wk-incol-dragging * { cursor: grabbing !important; }
   align-items: center;
   gap: 10px;
   padding-top: 4px;
-  border-top: 1px solid #1f1f1f;
+  border-top: 1px solid #EDE7DE;
 }
 .book-journal-confirm.hidden { display: none; }
 
@@ -4563,7 +4564,7 @@ body.is-wk-incol-dragging * { cursor: grabbing !important; }
   transition: color 0.12s;
 }
 .book-journal-confirm-yes { color: #e05c5c; }
-.book-journal-confirm-no  { color: #555; }
+.book-journal-confirm-no  { color: #6B6155; }
 .book-journal-confirm-yes:hover { color: #ff7070; }
 .book-journal-confirm-no:hover  { color: #888; }
 
@@ -4571,9 +4572,9 @@ body.is-wk-incol-dragging * { cursor: grabbing !important; }
   display: inline-block;
   margin-top: 8px;
   background: none;
-  border: 1px solid #252525;
+  border: 1px solid #EDE7DE;
   border-radius: 20px;
-  color: #555;
+  color: #6B6155;
   font-size: 12px;
   font-weight: 500;
   font-family: inherit;
@@ -4582,8 +4583,8 @@ body.is-wk-incol-dragging * { cursor: grabbing !important; }
   transition: border-color 0.12s, color 0.12s;
 }
 .book-journal-new-btn:hover {
-  border-color: rgba(155,114,207,0.4);
-  color: #d0d0d0;
+  border-color: rgba(216,90,48,0.4);
+  color: #2A2622;
 }
 
 /* ── Book Setup Form ── */
@@ -4599,9 +4600,9 @@ body.is-wk-incol-dragging * { cursor: grabbing !important; }
   margin-top: 8px;
   align-self: flex-start;
   background: none;
-  border: 1px solid #2a2a2a;
+  border: 1px solid #EDE7DE;
   border-radius: 8px;
-  color: #888;
+  color: #6B6155;
   font-size: 12px;
   font-weight: 500;
   font-family: inherit;
@@ -4610,8 +4611,8 @@ body.is-wk-incol-dragging * { cursor: grabbing !important; }
   transition: border-color 0.12s, color 0.12s;
 }
 .book-setup-save-btn:hover {
-  border-color: rgba(155,114,207,0.4);
-  color: #d0d0d0;
+  border-color: rgba(216,90,48,0.4);
+  color: #2A2622;
 }
 
 /* ── Book library: delete + add ── */
@@ -4631,9 +4632,9 @@ body.is-wk-incol-dragging * { cursor: grabbing !important; }
   aspect-ratio: 2 / 3;
   min-height: 200px;
   border-radius: 10px;
-  border: 1px dashed #2e2e2e;
+  border: 1px dashed #EDE7DE;
   background: none;
-  color: #3a3a3a;
+  color: #A99E8E;
   font-size: 30px;
   font-family: inherit;
   cursor: pointer;
@@ -4643,8 +4644,8 @@ body.is-wk-incol-dragging * { cursor: grabbing !important; }
   transition: border-color 0.15s, color 0.15s;
 }
 .book-add-tile:hover {
-  border-color: rgba(155,114,207,0.4);
-  color: #9B72CF;
+  border-color: rgba(216,90,48,0.4);
+  color: #D85A30;
 }
 
 .book-add-form {
@@ -4659,7 +4660,7 @@ body.is-wk-incol-dragging * { cursor: grabbing !important; }
   margin-top: 8px;
 }
 .book-add-cancel {
-  color: #555;
+  color: #6B6155;
 }
 
 .book-cover-dropzone {
@@ -4667,8 +4668,8 @@ body.is-wk-incol-dragging * { cursor: grabbing !important; }
   aspect-ratio: 2 / 3;
   min-height: 160px;
   border-radius: 10px;
-  border: 1px dashed #2e2e2e;
-  background: #1a1a1a;
+  border: 1px dashed #EDE7DE;
+  background: #F3ECE1;
   cursor: pointer;
   overflow: hidden;
   position: relative;
@@ -4679,11 +4680,11 @@ body.is-wk-incol-dragging * { cursor: grabbing !important; }
 }
 .book-cover-dropzone:hover,
 .book-cover-dropzone--over {
-  border-color: rgba(155,114,207,0.55);
+  border-color: rgba(216,90,48,0.55);
 }
 .book-cover-dropzone-prompt {
   font-size: 11px;
-  color: #484848;
+  color: #A99E8E;
   text-align: center;
   padding: 0 12px;
   pointer-events: none;
